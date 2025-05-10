@@ -42,11 +42,10 @@ jobs:
           strip: true
 
       - name: Zip
+        shell: pwsh
         run: |
-          cd "target/${{ matrix.platform.target }}/release"
-          zip_name="SAU-${{ matrix.platform.target }}.zip"
-          zip $zip_name *steam_api* SAU* SAU-Worker* -x "*.d"
-          mv $zip_name ../../../
+          Set-Location "target/${{ matrix.platform.target }}/release"
+          Compress-Archive -Path "*steam_api*", "SAU*", "SAU-Worker*" -DestinationPath "../../../SAU-${{ matrix.platform.target }}.zip" -Exclude "*.d"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
