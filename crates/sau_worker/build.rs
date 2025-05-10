@@ -4,11 +4,14 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let pattern = "../../target/*/build/steamworks-sys-*/out/*steam_api*";
-    let src_path: PathBuf = glob(pattern)?
+    let pattern = "../../target/*/build/steamworks-sys-*/out/*";
+    let files: Vec<PathBuf> = glob(pattern)?
         .filter_map(Result::ok)
-        .next()
-        .ok_or("libsteam_api file not found")?;
+        .collect();
+
+    if files.is_empty() {
+        return Err("No steam_api files found".into());
+    }
 
     let out_dir = env::var("OUT_DIR")?;
     let out_path = Path::new(&out_dir);
@@ -18,10 +21,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .and_then(|p| p.parent())
         .ok_or("Failed to locate target directory")?;
 
-    let file_name = src_path.file_name().ok_or("No file name")?;
-    let dest_path = target_dir.join(file_name);
-
-    fs::copy(&src_path, &dest_path)?;
+    for file in files {
+        let file_name = file.file_name().ok_or("No file name")?;
+        let dest_path = target_dir.join(file_name);
+        fs::copy(&file, &dest_path)?;
+    }
 
     Ok(())
 }
