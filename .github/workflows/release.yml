@@ -50,7 +50,9 @@ jobs:
           strip: true
 
       - name: Test
-        run: ls target/release
+        run: |
+          ls target/release
+          find . -type f -name '*steam_api*'
 
       # - name: Publish artifacts and release
       #   uses: houseabsolute/actions-rust-release@v0

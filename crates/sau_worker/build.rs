@@ -4,12 +4,15 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // let pattern = "../../target/*/build/steamworks-sys-*/out/*";
-    let pattern = "../../../**/target/*/build/steamworks-sys-*/out/*";
+    if std::env::var("CI").is_ok() {
+        return Ok(())
+    }
+
+    let pattern = "../../target/*/build/steamworks-sys-*/out/*";
     let src_path: PathBuf = glob(pattern)?
         .filter_map(Result::ok)
         .next()
-        .ok_or("steam_api file not found")?;
+        .ok_or("steam_api files not found")?;
 
     let out_dir = env::var("OUT_DIR")?;
     let out_path = Path::new(&out_dir);
