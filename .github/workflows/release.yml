@@ -46,7 +46,7 @@ jobs:
         run: |
           Set-Location "target/${{ matrix.platform.target }}/release"
           $files = Get-ChildItem "*steam_api*", "SAU*"
-          $files = $files | Where-Object { $_.Name -notlike "*.d" }
+          $files = $files | Where-Object { $_.Name -notlike "*.d" -and $_.Name -notlike "*.pdb" }
           Compress-Archive -Path $files -DestinationPath "../../../SAU-${{ matrix.platform.target }}.zip"
 
       - name: Upload artifact
