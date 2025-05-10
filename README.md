@@ -1,34 +1,16 @@
 # Steam Achievement Unlocker
 
 ## Description
-Unlocks every achievement for all owned Steam titles.
-Tested on Windows, Linux, and Mac (x64).
+
+Allows unlocking or resetting every achievement for owned Steam titles.
+Works on Windows, Linux, and Mac, including apple silicon.
 Make sure Steam is running and logged in.
 
-## Requirements
-- [.NET 9 Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/9.0)
+> Now written in Rust, the .NET version lives in the `dotnet` branch
 
-## General Instructions
-1. Download `SteamAchievementUnlocker-{os}-{arch}.zip` from the release section: [GitHub Releases](https://github.com/mbwilding/steam-achievement-unlocker/releases).
-2. Extract the downloaded files.
-3. Run the executable to unlock achievements for all Steam titles.
-4. To unlock achievements for specific app IDs, add them as command-line arguments separated by spaces.
-   - Example for specific app IDs: `730 813780`
-5. To clear achievements, add the `--clear` flag to the arguments.
+## Build / Run Instructions
 
-## Platform-Specific Instructions
-
-### Windows
-After extracting the files, run `SteamAchievementUnlocker.exe`.
-
-### Linux / Mac
-- Open a terminal and navigate to the extracted directory.
-- Run the following commands:
-  1. Set execution permissions:
-     ```bash
-     sudo chmod +x SteamAchievementUnlocker SteamAchievementUnlockerAgent
-     ```
-  2. Execute the application:
-     ```bash
-     ./SteamAchievementUnlocker
-     ```
+```bash
+cargo build
+cargo run --bin SAU -- --help
+```
