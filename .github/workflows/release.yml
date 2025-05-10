@@ -53,7 +53,7 @@ jobs:
           mv $zip_name ../../../
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: SAU-${{ matrix.platform.target }}
           path: SAU-${{ matrix.platform.target }}.zip
@@ -64,7 +64,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Download artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
