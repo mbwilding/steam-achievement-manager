@@ -53,7 +53,7 @@ jobs:
         run: |
           pushd "target/${{ matrix.platform.target }}/release"
           zip_name="SAU-${{ matrix.platform.target }}.zip"
-          zip $zip_name *steam_api* SAU* SAU-Worker*
+          zip $zip_name *steam_api* SAU* SAU-Worker* -x "*.d"
           mv $zip_name ../../../
           popd
           ls
