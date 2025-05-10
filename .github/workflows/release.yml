@@ -49,19 +49,24 @@ jobs:
           args: "--locked --release"
           strip: true
 
-      - name: Test
+      - name: Zip
         run: |
-          echo "RELEASE"
-          ls target/${{ matrix.platform.target }}/release
-          echo "STEAM_API"
-          find . -type f -name '*steam_api*'
+          pushd "target/${{ matrix.platform.target }}/release"
+          zip_name="SAU-${{ matrix.platform.target }}.zip"
+          zip $zip_name *steam_api* SAU* SAU-Worker*
+          mv $zip_name ../../../
+          popd
+          ls
+          mkdir test
+          unzip $zip_name test/
+          ls test
 
       # - name: Publish artifacts and release
       #   uses: houseabsolute/actions-rust-release@v0
       #   with:
       #     executable-name: ecc
       #     target: ${{ matrix.platform.target }}
-
+      #
       # - name: Create GitHub Release
       #   uses: softprops/action-gh-release@v2
       #   with:
