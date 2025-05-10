@@ -4,11 +4,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    if std::env::var("CI").is_ok() {
-        return Ok(())
-    }
-
-    let pattern = "../../target/*/build/steamworks-sys-*/out/*";
+    let pattern = "../../target/**/build/steamworks-sys-*/out/*";
     let src_path: PathBuf = glob(pattern)?
         .filter_map(Result::ok)
         .next()

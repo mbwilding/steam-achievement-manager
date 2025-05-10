@@ -51,7 +51,9 @@ jobs:
 
       - name: Test
         run: |
-          ls target/release
+          echo "RELEASE"
+          ls target/${{ matrix.platform.target }}/release
+          echo "STEAM_API"
           find . -type f -name '*steam_api*'
 
       # - name: Publish artifacts and release
