@@ -1,0 +1,73 @@
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Release - ${{ matrix.platform.os-name }}
+    strategy:
+      matrix:
+        platform:
+          - os-name: Linux-x86_64
+            runs-on: ubuntu-24.04
+            target: x86_64-unknown-linux-musl
+
+          # - os-name: Linux-aarch64
+          #   runs-on: ubuntu-24.04
+          #   target: aarch64-unknown-linux-musl
+
+          # - os-name: Windows-x86_64
+          #   runs-on: windows-latest
+          #   target: x86_64-pc-windows-msvc
+
+          # - os-name: Windows-aarch64
+          #   runs-on: windows-latest
+          #   target: aarch64-pc-windows-msvc
+
+          # - os-name: macOS-x86_64
+          #   runs-on: macOS-latest
+          #   target: x86_64-apple-darwin
+
+          # - os-name: macOS-aarch64
+          #   runs-on: macOS-latest
+          #   target: aarch64-apple-darwin
+
+    runs-on: ${{ matrix.platform.runs-on }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build binary
+        uses: houseabsolute/actions-rust-cross@v1
+        with:
+          command: build
+          target: ${{ matrix.platform.target }}
+          args: "--locked --release --bin SAU"
+          strip: true
+
+      - name: Build binary
+        uses: houseabsolute/actions-rust-cross@v1
+        with:
+          command: build
+          target: ${{ matrix.platform.target }}
+          args: "--locked --release --bin SAU-Worker"
+          strip: true
+
+      - name: Test
+        run: ls target/release
+
+      # - name: Publish artifacts and release
+      #   uses: houseabsolute/actions-rust-release@v0
+      #   with:
+      #     executable-name: ecc
+      #     target: ${{ matrix.platform.target }}
+
+      # - name: Create GitHub Release
+      #   uses: softprops/action-gh-release@v2
+      #   with:
+      #     tag_name: ${{ github.run_number }}
+      #     release_name: ${{ github.run_number }}
+      #     files: |
+      #       *.zip

@@ -1,3 +1,21 @@
 [workspace]
 resolver = "2"
 members = ["crates/sau", "crates/sau_worker"]
+
+[workspace.package]
+version = "0.0.1"
+authors = ["Matthew Wilding <mbwilding@gmail.com>"]
+repository = "https://github.com/mbwilding/SteamAchievementUnlocker"
+edition = "2024"
+
+[profile.release]
+opt-level = "z"         # Optimize for size.
+lto = true              # Enable Link Time Optimization.
+codegen-units = 1       # Reduce the number of codegen units to enhance optimization.
+strip = true            # Remove symbol information for a smaller binary.
+panic = "abort"         # Aborts on panic, reducing the binary size.
+incremental = false     # Disable incremental compilation.
+overflow-checks = false # Disable overflow checks if not required (unsafe).
+
+[profile.dev.package."*"]
+opt-level = 2

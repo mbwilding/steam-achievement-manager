@@ -1,7 +1,12 @@
 [package]
 name = "sau_worker"
-version = "0.1.0"
-edition = "2024"
+description = "Steam Achievement Unlocker - Worker"
+version.workspace = true
+authors.workspace = true
+repository.workspace = true
+edition.workspace = true
+license-file = "../../LICENSE"
+readme = "../../README.md"
 build = "build.rs"
 
 [[bin]]

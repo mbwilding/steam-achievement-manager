@@ -1,7 +1,12 @@
 [package]
 name = "sau"
-version = "0.1.0"
-edition = "2024"
+description = "Steam Achievement Unlocker"
+version.workspace = true
+authors.workspace = true
+repository.workspace = true
+edition.workspace = true
+license-file = "../../LICENSE"
+readme = "../../README.md"
 
 [[bin]]
 name = "SAU"
