@@ -45,7 +45,7 @@ jobs:
         shell: pwsh
         run: |
           Set-Location "target/${{ matrix.platform.target }}/release"
-          $files = Get-ChildItem "*steam_api*", "SAU*", "SAU-Worker*"
+          $files = Get-ChildItem "*steam_api*", "SAU*"
           $files = $files | Where-Object { $_.Name -notlike "*.d" }
           Compress-Archive -Path $files -DestinationPath "../../../SAU-${{ matrix.platform.target }}.zip"
 
