@@ -45,7 +45,9 @@ jobs:
         shell: pwsh
         run: |
           Set-Location "target/${{ matrix.platform.target }}/release"
-          Compress-Archive -Path "*steam_api*", "SAU*", "SAU-Worker*" -DestinationPath "../../../SAU-${{ matrix.platform.target }}.zip" -Exclude "*.d"
+          $files = Get-ChildItem "*steam_api*", "SAU*", "SAU-Worker*"
+          $files = $files | Where-Object { $_.Name -notlike "*.d" }
+          Compress-Archive -Path $files -DestinationPath "../../../SAU-${{ matrix.platform.target }}.zip"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
