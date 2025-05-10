@@ -16,6 +16,7 @@ path = "src/main.rs"
 clap = { version = "4.5.37", features = ["derive"] }
 dirs = "6.0.0"
 futures = "0.3.31"
+openssl = { version = "0.10.72", features = ["vendored"] }
 reqwest = { version = "0.12.15", features = ["json"] }
 serde = { version = "1.0.219", default-features = false, features = ["derive"] }
 serde_json = "1.0.140"
