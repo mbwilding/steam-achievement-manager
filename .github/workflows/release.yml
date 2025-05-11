@@ -81,3 +81,6 @@ jobs:
             LICENSE
             README.md
             **/*.zip
+
+      - name: Publish Crate
+        run: cargo publish
