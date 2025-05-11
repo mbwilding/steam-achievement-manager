@@ -8,14 +8,27 @@ Make sure Steam is running and logged in.
 
 > Now written in Rust, the .NET version lives in the `dotnet` branch
 
-## Install
-
-```bash
-cargo install sau
-```
-
 ## Build / Run Instructions
 
 ```bash
 cargo run -- --help
+```
+
+## Release
+
+> Extract the release for your platform first
+
+Run these commands in the terminal:
+
+### Windows
+
+```ps1
+sau --help
+```
+
+### Mac / Linux
+
+```bash
+chmod +x sau
+./sau --help
 ```
