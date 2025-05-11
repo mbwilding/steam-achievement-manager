@@ -15,9 +15,6 @@ async fn main() {
         println!("Otherwise the following will all fail");
     }
 
-    let apps_library = helpers::get_app_list_library().await;
-    let worker = std::env::current_exe().expect("Cannot get current executable name");
-
     match args.id {
         Some(id) => {
             if args.name.is_none() {
@@ -27,6 +24,8 @@ async fn main() {
             run(args);
         }
         None => {
+            let apps_library = helpers::get_app_list_library().await;
+            let worker = std::env::current_exe().expect("Cannot get current executable name");
             _ = stream::iter(apps_library)
                 .map(|app| {
                     let worker = worker.clone();
