@@ -8,6 +8,12 @@ Make sure Steam is running and logged in.
 
 > Now written in Rust, the .NET version lives in the `dotnet` branch
 
+## Install
+
+```bash
+cargo install sau
+```
+
 ## Build / Run Instructions
 
 ```bash
