@@ -4,11 +4,12 @@ mod helpers;
 mod steam;
 
 use futures::stream::{self, StreamExt};
+use helpers::get_app_list_all;
 use steam::run;
 
 #[tokio::main]
 async fn main() {
-    let mut args = args::get();
+    let args = args::get();
 
     if !args.worker {
         println!("Make sure Steam is running and logged in");
@@ -17,21 +18,22 @@ async fn main() {
 
     match args.id {
         Some(id) => {
-            if args.name.is_none() {
-                let apps_all = helpers::get_app_list_all().await;
-                args.name = apps_all.get(&id).cloned();
-            }
-            run(args);
+            let name = match args.name {
+                Some(x) => x,
+                None => {
+                    let apps = get_app_list_all().await;
+                    apps.get(&id).cloned().expect("App ID does not exist")
+                }
+            };
+
+            run(id, &name, args.clear);
         }
         None => {
             let apps_library = helpers::get_app_list_library().await;
 
             if args.parallel == 1 {
                 for app in &apps_library {
-                    let mut new_args = args.clone();
-                    new_args.id = Some(app.id);
-                    new_args.name = Some(app.name.clone());
-                    run(new_args);
+                    run(app.id, &app.name, args.clear);
                 }
             } else {
                 let worker = std::env::current_exe().expect("Cannot get current executable name");
