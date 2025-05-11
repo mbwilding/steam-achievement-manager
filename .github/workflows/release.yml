@@ -33,7 +33,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Build binary
+      - name: Build Binary
         uses: houseabsolute/actions-rust-cross@v1
         with:
           command: build
@@ -49,7 +49,7 @@ jobs:
           $files = $files | Where-Object { $_.Name -notlike "*.d" -and $_.Name -notlike "*.pdb" }
           Compress-Archive -Path $files -DestinationPath "../../../SAU-${{ matrix.platform.target }}.zip"
 
-      - name: Upload artifact
+      - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: SAU-${{ matrix.platform.target }}
@@ -63,14 +63,20 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Download artifacts
+      - name: Get Cargo.toml Version
+        id: get_version
+        run: |
+          version=$(grep '^version' Cargo.toml | head -n 1 | sed 's/version = "\(.*\)"/\1/')
+          echo "VERSION=$version" >> $GITHUB_ENV
+
+      - name: Download Artifacts
         uses: actions/download-artifact@v4
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: "v0.0.${{ github.run_number }}"
-          release_name: "0.0.${{ github.run_number }}"
+          tag_name: "v${{ env.VERSION }}"
+          release_name: "${{ env.VERSION }}"
           files: |
             LICENSE
             README.md
