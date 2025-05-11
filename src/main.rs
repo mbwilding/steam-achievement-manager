@@ -28,9 +28,10 @@ async fn main() {
 
             if args.parallel == 1 {
                 for app in &apps_library {
-                    args.id = Some(app.id);
-                    args.name = Some(app.name.clone());
-                    run(args.clone());
+                    let mut new_args = args.clone();
+                    new_args.id = Some(app.id);
+                    new_args.name = Some(app.name.clone());
+                    run(new_args);
                 }
             } else {
                 let worker = std::env::current_exe().expect("Cannot get current executable name");
