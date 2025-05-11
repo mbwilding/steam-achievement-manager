@@ -1,4 +1,5 @@
 use crate::contracts::{App, GetAppList};
+use std::collections::HashMap;
 use std::env;
 use std::path::Path;
 use std::process;
@@ -9,7 +10,7 @@ use xmltree::Element;
 use winreg::enums::*;
 
 #[cfg(windows)]
-pub async fn get_app_list() -> Vec<App> {
+pub async fn get_app_list_library() -> Vec<App> {
     let steam_id3 = read_registry(r"Software\Valve\Steam\ActiveProcess", "ActiveUser");
     let profile_id = (1u64 << 56) | (1u64 << 52) | (1u64 << 32) | steam_id3 as u64;
     let url = format!(
@@ -20,7 +21,7 @@ pub async fn get_app_list() -> Vec<App> {
 }
 
 #[cfg(any(target_os = "linux", target_os = "macos"))]
-pub async fn get_app_list() -> Vec<App> {
+pub async fn get_app_list_library() -> Vec<App> {
     let home = if cfg!(target_os = "linux") {
         env::var("HOME").unwrap_or_else(|_| setting_failure())
     } else {
@@ -133,8 +134,7 @@ fn read_registry(base_path: &str, dword: &str) -> u32 {
     value
 }
 
-#[allow(dead_code)]
-pub async fn get_game_list_all() -> Vec<App> {
+pub async fn get_app_list_all() -> HashMap<u32, String> {
     let http = reqwest::Client::new();
 
     let response = http
@@ -148,5 +148,10 @@ pub async fn get_game_list_all() -> Vec<App> {
         .await
         .expect("Unable to deserialise response from Steam GetAppList API");
 
-    apps_response.apps_list.apps
+    apps_response
+        .apps_list
+        .apps
+        .into_iter()
+        .map(|app| (app.id, app.name))
+        .collect()
 }

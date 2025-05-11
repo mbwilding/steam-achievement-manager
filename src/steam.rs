@@ -1,12 +1,21 @@
-mod args;
+pub fn run(args: crate::args::Args) {
+    let id = match args.id {
+        Some(x) => x,
+        None => {
+            println!("No id specified");
+            return;
+        }
+    };
 
-fn main() {
-    let args = args::get();
+    let name = match args.name {
+        Some(x) => x,
+        None => "Unspecified".to_string(),
+    };
 
-    let (client, _single) = match steamworks::Client::init_app(args.id) {
+    let (client, _single) = match steamworks::Client::init_app(id) {
         Ok(x) => x,
         Err(_) => {
-            println!("({}) {} | App not in your library", args.id, args.name);
+            println!("({}) {} | App not in your library", id, &name);
             return;
         }
     };
@@ -16,7 +25,7 @@ fn main() {
     match user_stats.get_num_achievements() {
         Ok(x) => x,
         Err(_) => {
-            println!("({}) {} | No achievements were found", args.id, args.name);
+            println!("({}) {} | No achievements were found", id, &name);
             return;
         }
     };
@@ -24,10 +33,7 @@ fn main() {
     let achievement_names = match user_stats.get_achievement_names() {
         Some(x) => x,
         None => {
-            println!(
-                "({}) {} | Failed to get achievement names",
-                args.id, args.name
-            );
+            println!("({}) {} | Failed to get achievement names", id, &name);
             return;
         }
     };
@@ -42,6 +48,6 @@ fn main() {
     });
 
     if user_stats.store_stats().is_ok() {
-        println!("({}) {} | Processed", args.id, args.name);
+        println!("({}) {} | Processed", id, &name);
     }
 }

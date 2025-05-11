@@ -11,6 +11,5 @@ Make sure Steam is running and logged in.
 ## Build / Run Instructions
 
 ```bash
-cargo build
-cargo run --bin SAU -- --help
+cargo run -- --help
 ```

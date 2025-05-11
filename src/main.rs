@@ -1,37 +1,33 @@
 mod args;
 mod contracts;
 mod helpers;
+mod steam;
 
 use futures::stream::{self, StreamExt};
+use steam::run;
 
 #[tokio::main]
 async fn main() {
-    let args = args::get_and_validate();
+    let mut args = args::get();
 
-    println!("Make sure Steam is running and logged in");
-    println!("Otherwise the following will all fail");
+    if !args.worker {
+        println!("Make sure Steam is running and logged in");
+        println!("Otherwise the following will all fail");
+    }
 
-    let apps = helpers::get_app_list().await;
-
-    let mut worker = std::env::current_exe().expect("Cannot get current executable name");
-    worker.set_file_name(format!("SAU-Worker{}", std::env::consts::EXE_SUFFIX));
+    let apps_library = helpers::get_app_list_library().await;
+    let worker = std::env::current_exe().expect("Cannot get current executable name");
 
     match args.id {
         Some(id) => {
-            let mut cmd = tokio::process::Command::new(worker);
-
-            cmd.args(["--id", &id.to_string()]);
-            if let Some(name) = args.name {
-                cmd.args(["--name", &name]);
+            if args.name.is_none() {
+                let apps_all = helpers::get_app_list_all().await;
+                args.name = apps_all.get(&id).cloned();
             }
-            if args.clear {
-                cmd.arg("--clear");
-            }
-
-            cmd.status().await.expect("failed to execute sau_worker");
+            run(args);
         }
         None => {
-            _ = stream::iter(apps)
+            _ = stream::iter(apps_library)
                 .map(|app| {
                     let worker = worker.clone();
                     async move {
@@ -42,6 +38,7 @@ async fn main() {
                         if args.clear {
                             cmd.arg("--clear");
                         }
+                        cmd.arg("--worker");
 
                         cmd.status().await.expect("failed to execute sau_worker");
                     }
