@@ -50,7 +50,7 @@ async fn main() {
                             }
                             cmd.arg("--worker");
 
-                            cmd.status().await.expect("Failed to execute sau_worker");
+                            cmd.status().await.expect("Failed to execute self externally");
                         }
                     })
                     .buffer_unordered(args.parallel)
