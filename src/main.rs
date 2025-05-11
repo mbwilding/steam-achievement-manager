@@ -20,10 +20,11 @@ async fn main() {
         Some(id) => {
             let name = match args.name {
                 Some(x) => x,
-                None => {
-                    let apps = get_app_list_all().await;
-                    apps.get(&id).cloned().expect("App ID does not exist")
-                }
+                None => get_app_list_all()
+                    .await
+                    .get(&id)
+                    .cloned()
+                    .expect("App ID does not exist"),
             };
 
             run(id, &name, args.clear);
@@ -36,12 +37,12 @@ async fn main() {
                     run(app.id, &app.name, args.clear);
                 }
             } else {
-                let worker = std::env::current_exe().expect("Cannot get current executable name");
+                let exe = std::env::current_exe().expect("Cannot get current executable name");
                 _ = stream::iter(apps_library)
                     .map(|app| {
-                        let worker = worker.clone();
+                        let exe = exe.clone();
                         async move {
-                            let mut cmd = tokio::process::Command::new(worker);
+                            let mut cmd = tokio::process::Command::new(exe);
 
                             cmd.args(["--id", &app.id.to_string()]);
                             cmd.args(["--name", &app.name]);
@@ -50,7 +51,9 @@ async fn main() {
                             }
                             cmd.arg("--worker");
 
-                            cmd.status().await.expect("Failed to execute self externally");
+                            cmd.status()
+                                .await
+                                .expect("Failed to execute self externally");
                         }
                     })
                     .buffer_unordered(args.parallel)
