@@ -4,7 +4,7 @@ pub fn get() -> Args {
     Args::parse()
 }
 
-#[derive(Parser, Debug)]
+#[derive(Parser, Debug, Clone)]
 #[command(version, about, long_about = None, after_help = "Will run for all apps, unless id is specified")]
 pub struct Args {
     /// App ID
@@ -15,7 +15,7 @@ pub struct Args {
     #[arg(short, long)]
     pub clear: bool,
 
-    /// How many games at once, too high will cause issues
+    /// How many apps to process at once, too high will cause issues
     #[arg(short, long, default_value = "1")]
     pub parallel: usize,
 
