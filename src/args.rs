@@ -5,7 +5,7 @@ pub fn get() -> Args {
 }
 
 #[derive(Parser, Debug, Clone)]
-#[command(version, about, long_about = None, after_help = "Will run for all owned apps, unless id is specified")]
+#[command(version, about, long_about = None, after_help = "You can combine arguments, for example --owned --clear\nIf you have family sharing enabled, you can use --all")]
 pub struct Args {
     /// App ID
     #[arg(short, long)]
