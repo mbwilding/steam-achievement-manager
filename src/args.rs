@@ -5,7 +5,7 @@ pub fn get() -> Args {
 }
 
 #[derive(Parser, Debug, Clone)]
-#[command(version, about, long_about = None, after_help = "Will run for all apps, unless id is specified")]
+#[command(version, about, long_about = None, after_help = "Will run for all owned apps, unless id is specified")]
 pub struct Args {
     /// App ID
     #[arg(short, long)]
@@ -14,6 +14,10 @@ pub struct Args {
     /// Clear achievements
     #[arg(short, long)]
     pub clear: bool,
+
+    /// All owned apps
+    #[arg(short, long)]
+    pub owned: bool,
 
     /// All known apps
     #[arg(short, long)]

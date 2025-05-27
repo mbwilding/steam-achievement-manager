@@ -11,11 +11,6 @@ use steam::run;
 async fn main() {
     let args = args::get();
 
-    if !args.worker {
-        println!("Make sure Steam is running and logged in");
-        println!("Otherwise the following will all fail");
-    }
-
     match args.id {
         Some(id) => {
             let name = match args.name {
@@ -32,8 +27,16 @@ async fn main() {
         None => {
             let apps_library = if args.all {
                 get_app_list_all_vec().await
-            } else {
+            } else if args.owned {
                 get_app_list_library().await
+            } else {
+                if !args.worker {
+                    println!(
+                        "To see all the options, run with --help\n\
+                         Make sure Steam is running and logged in"
+                    );
+                }
+                std::process::exit(1);
             };
 
             let exe = std::env::current_exe().expect("Cannot get current executable name");

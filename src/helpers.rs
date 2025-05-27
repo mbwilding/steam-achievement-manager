@@ -2,7 +2,6 @@ use crate::contracts::{App, GetAppList};
 use std::collections::HashMap;
 use std::env;
 use std::path::Path;
-use std::process;
 use tokio::fs;
 use xmltree::Element;
 
@@ -87,7 +86,7 @@ fn setting_failure() -> ! {
     eprintln!("Error: {}", error_msg);
     let mut _input = String::new();
     let _ = std::io::stdin().read_line(&mut _input);
-    process::exit(1);
+    std::process::exit(1);
 }
 
 fn parse_xml_to_dictionary(xml: &str) -> Vec<App> {
