@@ -36,7 +36,7 @@ async fn main() {
                          Make sure Steam is running and logged in"
                     );
                 }
-                std::process::exit(1);
+                std::process::exit(0);
             };
 
             let exe = std::env::current_exe().expect("Cannot get current executable name");
