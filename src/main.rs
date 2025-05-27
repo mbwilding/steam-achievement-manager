@@ -4,7 +4,7 @@ mod helpers;
 mod steam;
 
 use futures::stream::{self, StreamExt};
-use helpers::get_app_list_all;
+use helpers::{get_app_list_all_hash, get_app_list_all_vec, get_app_list_library};
 use steam::run;
 
 #[tokio::main]
@@ -20,46 +20,44 @@ async fn main() {
         Some(id) => {
             let name = match args.name {
                 Some(x) => x,
-                None => get_app_list_all()
+                None => get_app_list_all_hash()
                     .await
                     .get(&id)
                     .cloned()
-                    .expect("App ID does not exist"),
+                    .unwrap_or("Unknown".to_string()),
             };
 
             run(id, &name, args.clear);
         }
         None => {
-            let apps_library = helpers::get_app_list_library().await;
-
-            if args.parallel == 1 {
-                for app in &apps_library {
-                    run(app.id, &app.name, args.clear);
-                }
+            let apps_library = if args.all {
+                get_app_list_all_vec().await
             } else {
-                let exe = std::env::current_exe().expect("Cannot get current executable name");
-                _ = stream::iter(apps_library)
-                    .map(|app| {
-                        let exe = exe.clone();
-                        async move {
-                            let mut cmd = tokio::process::Command::new(exe);
+                get_app_list_library().await
+            };
 
-                            cmd.args(["--id", &app.id.to_string()]);
-                            cmd.args(["--name", &app.name]);
-                            if args.clear {
-                                cmd.arg("--clear");
-                            }
-                            cmd.arg("--worker");
+            let exe = std::env::current_exe().expect("Cannot get current executable name");
+            _ = stream::iter(apps_library)
+                .map(|app| {
+                    let exe = exe.clone();
+                    async move {
+                        let mut cmd = tokio::process::Command::new(exe);
 
-                            cmd.status()
-                                .await
-                                .expect("Failed to execute self externally");
+                        cmd.args(["--id", &app.id.to_string()]);
+                        cmd.args(["--name", &app.name]);
+                        if args.clear {
+                            cmd.arg("--clear");
                         }
-                    })
-                    .buffer_unordered(args.parallel)
-                    .collect::<Vec<_>>()
-                    .await;
-            }
+                        cmd.arg("--worker");
+
+                        cmd.status()
+                            .await
+                            .expect("Failed to execute self externally");
+                    }
+                })
+                .buffer_unordered(args.parallel)
+                .collect::<Vec<_>>()
+                .await;
         }
     }
 }

@@ -134,7 +134,7 @@ fn read_registry(base_path: &str, dword: &str) -> u32 {
     value
 }
 
-pub async fn get_app_list_all() -> HashMap<u32, String> {
+pub async fn get_app_list_all_vec() -> Vec<App> {
     let http = reqwest::Client::new();
 
     let response = http
@@ -143,14 +143,17 @@ pub async fn get_app_list_all() -> HashMap<u32, String> {
         .await
         .expect("Steam GetAppList API unavailable");
 
-    let apps_response = response
+    response
         .json::<GetAppList>()
         .await
-        .expect("Unable to deserialise response from Steam GetAppList API");
-
-    apps_response
+        .expect("Unable to deserialise response from Steam GetAppList API")
         .apps_list
         .apps
+}
+
+pub async fn get_app_list_all_hash() -> HashMap<u32, String> {
+    get_app_list_all_vec()
+        .await
         .into_iter()
         .map(|app| (app.id, app.name))
         .collect()

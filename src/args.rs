@@ -15,6 +15,10 @@ pub struct Args {
     #[arg(short, long)]
     pub clear: bool,
 
+    /// All known apps
+    #[arg(short, long)]
+    pub all: bool,
+
     /// How many apps to process at once, too high will cause issues
     #[arg(short, long, default_value = "1")]
     pub parallel: usize,
