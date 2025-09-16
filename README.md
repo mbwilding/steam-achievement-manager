@@ -35,7 +35,10 @@ chmod +x sau
 
 ## Usage
 
+Release
 > sau [OPTIONS]
+
+Source
 > cargo run -- [OPTIONS]
 
 ```
@@ -49,4 +52,5 @@ chmod +x sau
 ```
 
 You can combine arguments, for example --owned --clear
+
 If you have family sharing enabled, you can use --all
