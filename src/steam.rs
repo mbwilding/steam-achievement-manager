@@ -1,5 +1,5 @@
 pub fn run(id: u32, name: &str, clear: bool) {
-    let (client, _single) = match steamworks::Client::init_app(id) {
+    let client = match steamworks::Client::init_app(id) {
         Ok(x) => x,
         Err(_) => {
             println!("({}) {} | App not in your library", id, name);
