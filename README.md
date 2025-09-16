@@ -41,16 +41,17 @@ Release
 Source
 > cargo run -- [OPTIONS]
 
-```
--i, --id <ID>              App ID
--c, --clear                Clear achievements
--o, --owned                All owned apps
--a, --all                  All known apps
--p, --parallel <PARALLEL>  How many apps to process at once, too high will cause issues [default: 1]
--h, --help                 Print help
--V, --version              Print version
-```
+| Option                        | Description                                                               |
+|-------------------------------|---------------------------------------------------------------------------|
+| `-i`, `--id <ID>`             | App ID                                                                    |
+| `-c`, `--clear`               | Clear achievements                                                        |
+| `-o`, `--owned`               | All owned apps                                                            |
+| `-a`, `--all`                 | All known apps                                                            |
+| `-p`, `--parallel <PARALLEL>` | How many apps to process at once, too high will cause issues [Default: 1] |
+| `-h`, `--help`                | Print help                                                                |
+| `-V`, `--version`             | Print version                                                             |
 
-You can combine arguments, for example --owned --clear
 
-If you have family sharing enabled, you can use --all
+You can combine arguments, for example `--owned --clear`
+
+If you have family sharing enabled, you can use `--all`
