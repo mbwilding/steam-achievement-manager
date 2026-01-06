@@ -15,8 +15,7 @@ openssl = { version = "0.10", features = ["vendored"] }
 serde = { version = "1.0", default-features = false, features = ["derive"] }
 serde_json = "1.0"
 steamworks = "0.12"
-tokio = { version = "1.47", features = ["full"] }
-
+tokio = { version = "1.49", features = ["full"] }
 
 [build-dependencies]
 glob = "0.3"

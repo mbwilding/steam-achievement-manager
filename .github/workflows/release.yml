@@ -10,6 +10,7 @@ jobs:
   build:
     name: Release - ${{ matrix.platform.os-name }}
     strategy:
+      fail-fast: false
       matrix:
         platform:
           - os-name: Linux-x86_64
@@ -58,6 +59,7 @@ jobs:
   release:
     name: Release
     needs: build
+    if: ${{ success() }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
