@@ -1,7 +1,7 @@
 [package]
 name = "sau"
 description = "Steam Achievement Unlocker"
-version = "0.1.2"
+version = "1.0.0"
 authors = ["Matthew Wilding <mbwilding@gmail.com>"]
 repository = "https://github.com/mbwilding/SteamAchievementUnlocker"
 edition = "2024"
@@ -11,18 +11,12 @@ build = "build.rs"
 
 [dependencies]
 clap = { version = "4.5", features = ["derive"] }
-dirs = "6.0"
-futures = "0.3"
 openssl = { version = "0.10", features = ["vendored"] }
-reqwest = { version = "0.12", features = ["json"] }
 serde = { version = "1.0", default-features = false, features = ["derive"] }
 serde_json = "1.0"
 steamworks = "0.12"
 tokio = { version = "1.47", features = ["full"] }
-xmltree = "0.11"
 
-[target.'cfg(windows)'.dependencies]
-winreg = "0.55"
 
 [build-dependencies]
 glob = "0.3"

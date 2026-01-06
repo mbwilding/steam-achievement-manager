@@ -2,7 +2,7 @@
 
 ## Description
 
-Allows unlocking or resetting every achievement for owned Steam titles.
+Allows unlocking or resetting achievements for Steam titles by App ID.
 Works on Windows, Linux, and Mac, including apple silicon.
 Make sure Steam is running and logged in.
 
@@ -43,15 +43,13 @@ Source
 
 | Option                        | Description                                                      |
 |-------------------------------|------------------------------------------------------------------|
-| `-i`, `--id <ID>`             | App ID                                                           |
+| `-i`, `--id <ID>`             | App ID (required)                                                |
 | `-c`, `--clear`               | Clear achievements                                               |
-| `-o`, `--owned`               | All owned apps                                                   |
-| `-a`, `--all`                 | All known apps                                                   |
 | `-p`, `--parallel <PARALLEL>` | How many apps to process at once, too high will cause issues [1] |
 | `-h`, `--help`                | Print help                                                       |
 | `-V`, `--version`             | Print version                                                    |
 
 
-You can combine arguments, for example `--owned --clear`
+You can combine arguments, for example `--id 123 --clear`
 
-If you have family sharing enabled, you can use `--all`
+To find an App ID, search for the game on [SteamDB](https://steamdb.info/) or check the game's Steam store page URL.

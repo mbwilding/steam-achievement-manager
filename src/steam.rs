@@ -1,8 +1,8 @@
-pub fn run(id: u32, name: &str, clear: bool) {
+pub fn run(id: u32, clear: bool) {
     let client = match steamworks::Client::init_app(id) {
         Ok(x) => x,
         Err(_) => {
-            println!("({}) {} | App not in your library", id, name);
+            println!("{}: App not in your library", id);
             return;
         }
     };
@@ -12,7 +12,7 @@ pub fn run(id: u32, name: &str, clear: bool) {
     match user_stats.get_num_achievements() {
         Ok(x) => x,
         Err(_) => {
-            println!("({}) {} | No achievements were found", id, name);
+            println!("{}: No achievements were found", id);
             return;
         }
     };
@@ -20,7 +20,7 @@ pub fn run(id: u32, name: &str, clear: bool) {
     let achievement_names = match user_stats.get_achievement_names() {
         Some(x) => x,
         None => {
-            println!("({}) {} | Failed to get achievement names", id, name);
+            println!("{}: Failed to get achievement names", id);
             return;
         }
     };
@@ -35,6 +35,6 @@ pub fn run(id: u32, name: &str, clear: bool) {
     });
 
     if user_stats.store_stats().is_ok() {
-        println!("({}) {} | Processed", id, name);
+        println!("{}: Processed", id);
     }
 }
