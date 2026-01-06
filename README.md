@@ -43,7 +43,7 @@ Source
 
 | Option                        | Description                                                      |
 |-------------------------------|------------------------------------------------------------------|
-| `-i`, `--id <ID>`             | App ID (required)                                                |
+| `-i`, `--id <ID>`             | App ID(s) - can specify multiple (required)                      |
 | `-c`, `--clear`               | Clear achievements                                               |
 | `-p`, `--parallel <PARALLEL>` | How many apps to process at once, too high will cause issues [1] |
 | `-h`, `--help`                | Print help                                                       |
@@ -51,5 +51,17 @@ Source
 
 
 You can combine arguments, for example `--id 123 --clear`
+
+### Multiple IDs
+
+You can pass multiple App IDs in two ways:
+
+```bash
+# Comma-separated
+sau --id 123,456,789
+
+# Multiple --id flags
+sau --id 123 --id 456 --id 789
+```
 
 To find an App ID, search for the game on [SteamDB](https://steamdb.info/) or check the game's Steam store page URL.

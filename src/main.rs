@@ -7,18 +7,17 @@ use steam::run;
 async fn main() {
     let args = args::get();
 
-    match args.id {
-        Some(id) => {
-            run(id, args.clear);
+    if args.id.is_empty() {
+        if !args.worker {
+            println!(
+                "To see all the options, run with --help\n\
+                 Make sure Steam is running and logged in"
+            );
         }
-        None => {
-            if !args.worker {
-                println!(
-                    "To see all the options, run with --help\n\
-                     Make sure Steam is running and logged in"
-                );
-            }
-            std::process::exit(0);
-        }
+        std::process::exit(0);
+    }
+
+    for id in args.id {
+        run(id, args.clear);
     }
 }
