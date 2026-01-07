@@ -8,25 +8,27 @@ permissions:
 
 jobs:
   build:
-    name: Release - ${{ matrix.platform.os-name }}
+    name: Release - ${{ matrix.platform.name }}
     strategy:
-      fail-fast: false
+      fail-fast: true
       matrix:
+        # Supported targets
+        # https://github.com/cross-rs/cross#supported-targets
         platform:
-          - os-name: Linux-x86_64
-            runs-on: ubuntu-24.04
-            target: x86_64-unknown-linux-musl
+          - name: linux-x64
+            runs-on: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
 
-          - os-name: Windows-x86_64
-            runs-on: windows-latest
-            target: x86_64-pc-windows-msvc
+          - name: windows-x64
+            runs-on: ubuntu-latest
+            target: x86_64-pc-windows-gnu
 
-          - os-name: macOS-x86_64
-            runs-on: macOS-latest
+          - name: macos-x64
+            runs-on: ubuntu-latest
             target: x86_64-apple-darwin
 
-          - os-name: macOS-aarch64
-            runs-on: macOS-latest
+          - name: macos-arm64
+            runs-on: ubuntu-latest
             target: aarch64-apple-darwin
 
     runs-on: ${{ matrix.platform.runs-on }}
@@ -48,13 +50,13 @@ jobs:
           Set-Location "target/${{ matrix.platform.target }}/release"
           $files = Get-ChildItem "*steam_api*", "SAM*"
           $files = $files | Where-Object { $_.Name -notlike "*.d" -and $_.Name -notlike "*.pdb" }
-          Compress-Archive -Path $files -DestinationPath "../../../SAM-${{ matrix.platform.target }}.zip"
+          Compress-Archive -Path $files -DestinationPath "../../../SAM-${{ matrix.platform.name }}.zip"
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: SAM-${{ matrix.platform.target }}
-          path: SAM-${{ matrix.platform.target }}.zip
+          name: SAM-${{ matrix.platform.name }}
+          path: SAM-${{ matrix.platform.name }}.zip
 
   release:
     name: Release
