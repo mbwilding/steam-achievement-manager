@@ -3,8 +3,7 @@ mod steam;
 
 use steam::run;
 
-#[tokio::main]
-async fn main() {
+fn main() {
     let args = args::get();
 
     if args.id.is_empty() {
