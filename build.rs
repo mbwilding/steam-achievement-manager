@@ -4,7 +4,11 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    println!("cargo:rustc-link-arg=-Wl,-rpath,$ORIGIN");
+    if cfg!(target_os = "linux") {
+        println!("cargo:rustc-link-arg=-Wl,-rpath,$ORIGIN");
+    } else if cfg!(target_os = "macos") {
+        println!("cargo:rustc-link-arg=-Wl,-rpath,@loader_path");
+    }
 
     let pattern = "./target/**/build/steamworks-sys-*/out/*";
     let src_path: PathBuf = glob(pattern)?
