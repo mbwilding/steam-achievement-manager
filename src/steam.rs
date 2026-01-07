@@ -1,110 +1,94 @@
-use colored::{ColoredString, Colorize};
+use anyhow::{Context, Result, bail};
+use gag::Gag;
 
-pub struct AchievementData {
-    pub names: Vec<String>,
+pub struct AchievementInfo {
+    pub name: String,
+    pub unlocked: bool,
 }
 
-pub fn get_achievements(id: u32) -> Result<AchievementData, String> {
-    let id_colored = id.to_string().blue();
+pub struct AchievementData {
+    pub achievements: Vec<AchievementInfo>,
+}
 
-    let client = match steamworks::Client::init_app(id) {
-        Ok(x) => x,
-        Err(_) => {
-            return Err(format!("{}: App not in your library", id_colored));
-        }
-    };
+pub struct ProcessResult {
+    pub name: String,
+    pub success: bool,
+}
+
+pub fn get_achievements(id: u32) -> Result<AchievementData> {
+    let _stdout_gag = Gag::stdout().ok();
+    let _stderr_gag = Gag::stderr().ok();
+
+    let client = steamworks::Client::init_app(id)
+        .with_context(|| format!("App {} not in your library", id))?;
 
     let user_stats = client.user_stats();
 
     match user_stats.get_num_achievements() {
-        Ok(count) => {
-            println!(
-                "{}: {} | {}",
-                id_colored,
-                "Achievements".green(),
-                count.to_string().bright_blue(),
-            );
-        }
-        Err(_) => {
-            return Err(format!("{}: No achievements were found", id_colored));
-        }
+        Ok(_) => {}
+        Err(_) => bail!("Failed to get achievement names for app {}", id),
     };
 
     let achievement_names = match user_stats.get_achievement_names() {
         Some(x) => x,
-        None => {
-            return Err(format!("{}: Failed to get achievement names", id_colored));
-        }
+        None => bail!("Failed to get achievement names for app {}", id),
     };
 
-    Ok(AchievementData {
-        names: achievement_names,
-    })
+    let achievements = achievement_names
+        .into_iter()
+        .map(|name| {
+            let unlocked = user_stats.achievement(&name).get().unwrap_or(false);
+            AchievementInfo { name, unlocked }
+        })
+        .collect();
+
+    Ok(AchievementData { achievements })
 }
 
-pub fn process_achievements(id: u32, achievement_names: Vec<String>, clear: bool) -> bool {
-    let id_colored = id.to_string().blue();
-
-    println!("{}: {}", id_colored, "Processing".green());
-
-    let mut failed = false;
+pub fn process_achievements(
+    id: u32,
+    achievement_names: Vec<String>,
+    clear: bool,
+) -> Result<Vec<ProcessResult>, String> {
+    let _stdout_gag = Gag::stdout().ok();
+    let _stderr_gag = Gag::stderr().ok();
 
     let client = match steamworks::Client::init_app(id) {
         Ok(x) => x,
         Err(_) => {
-            eprintln!("{}: App not in your library", id_colored);
-            return exit(&id_colored, false);
+            return Err(format!("App {} not in your library", id));
         }
     };
 
     let user_stats = client.user_stats();
 
-    achievement_names.iter().for_each(|name| {
-        let achievement = user_stats.achievement(name);
+    let results: Vec<ProcessResult> = achievement_names
+        .iter()
+        .map(|name| {
+            let achievement = user_stats.achievement(name);
 
-        let success = if clear {
-            achievement.clear()
-        } else {
-            achievement.set()
-        }
-        .is_ok();
+            let success = if clear {
+                achievement.clear()
+            } else {
+                achievement.set()
+            }
+            .is_ok();
 
-        let status = match (clear, success) {
-            (true, true) => "UNSET".yellow(),
-            (false, true) => "SET".green(),
-            (_, false) => "FAIL".red(),
-        };
+            ProcessResult {
+                name: name.clone(),
+                success,
+            }
+        })
+        .collect();
 
-        let name_colored = name.bright_blue();
-        if success {
-            println!("{}: {} | {}", id_colored, status, name_colored);
-        } else {
-            eprintln!("{}: {} | {}", id_colored, status, name_colored);
-            failed = true;
-        }
-    });
-
+    let all_success = results.iter().all(|r| r.success);
     let stored = user_stats.store_stats().is_ok();
 
-    exit(&id_colored, stored && !failed)
-}
-
-pub fn run(id: u32, clear: bool) -> bool {
-    match get_achievements(id) {
-        Ok(data) => process_achievements(id, data.names, clear),
-        Err(e) => {
-            eprintln!("{}", e);
-            false
-        }
-    }
-}
-
-fn exit(id_colored: &ColoredString, success: bool) -> bool {
-    if success {
-        println!("{}: {}", id_colored, "Success".green());
+    if all_success && stored {
+        Ok(results)
+    } else if !stored {
+        Err("Failed to store stats to Steam".to_string())
     } else {
-        eprintln!("{}: {}", id_colored, "Failed".red());
+        Ok(results)
     }
-
-    success
 }
