@@ -46,15 +46,15 @@ jobs:
         shell: pwsh
         run: |
           Set-Location "target/${{ matrix.platform.target }}/release"
-          $files = Get-ChildItem "*steam_api*", "SAU*"
+          $files = Get-ChildItem "*steam_api*", "SAM*"
           $files = $files | Where-Object { $_.Name -notlike "*.d" -and $_.Name -notlike "*.pdb" }
-          Compress-Archive -Path $files -DestinationPath "../../../SAU-${{ matrix.platform.target }}.zip"
+          Compress-Archive -Path $files -DestinationPath "../../../SAM-${{ matrix.platform.target }}.zip"
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: SAU-${{ matrix.platform.target }}
-          path: SAU-${{ matrix.platform.target }}.zip
+          name: SAM-${{ matrix.platform.target }}
+          path: SAM-${{ matrix.platform.target }}.zip
 
   release:
     name: Release
