@@ -50,13 +50,13 @@ jobs:
           Set-Location "target/${{ matrix.platform.target }}/release"
           $files = Get-ChildItem "*steam_api*", "SAM*"
           $files = $files | Where-Object { $_.Name -notlike "*.d" -and $_.Name -notlike "*.pdb" }
-          Compress-Archive -Path $files -DestinationPath "../../../SAM-${{ matrix.platform.name }}.zip"
+          Compress-Archive -Path $files -DestinationPath "../../../sam-${{ matrix.platform.name }}.zip"
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: SAM-${{ matrix.platform.name }}
-          path: SAM-${{ matrix.platform.name }}.zip
+          name: sam-${{ matrix.platform.name }}
+          path: sam-${{ matrix.platform.name }}.zip
 
   release:
     name: Release
