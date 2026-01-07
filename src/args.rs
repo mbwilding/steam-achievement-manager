@@ -10,8 +10,8 @@ pub fn get() -> Args {
     about,
     long_about = None,
     after_help = "Examples:\n  \
-                  sau                               # Launch TUI and prompt for App ID\n  \
-                  sau --id 480                      # Launch TUI with App ID 480 (skip prompt)"
+                  sam                               # Launch TUI and prompt for App ID\n  \
+                  sam --id 480                      # Launch TUI with App ID 480 (skip prompt)"
 )]
 pub struct Args {
     /// Application ID. If provided, skips the App ID prompt in the TUI.

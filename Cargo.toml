@@ -1,9 +1,9 @@
 [package]
-name = "sau"
-description = "Steam Achievement Unlocker"
+name = "sam"
+description = "Steam Achievement Manager"
 version = "2.0.0"
 authors = ["Matthew Wilding <mbwilding@gmail.com>"]
-repository = "https://github.com/mbwilding/SteamAchievementUnlocker"
+repository = "https://github.com/mbwilding/steam-achievement-manager"
 edition = "2024"
 license-file = "LICENSE"
 readme = "README.md"

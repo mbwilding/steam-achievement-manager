@@ -1,6 +1,6 @@
-# Steam Achievement Unlocker
+# Steam Achievement Manager
 
-A terminal-based tool for unlocking and resetting Steam achievements for any game in your library. Built with Rust for cross-platform compatibility.
+A terminal-based tool for unlocking or resetting Steam achievements for any game in your library. Built with Rust for cross-platform compatibility.
 
 ![Screenshot](promo.png)
 
@@ -20,27 +20,27 @@ A terminal-based tool for unlocking and resetting Steam achievements for any gam
 
 ### Pre-built Releases
 
-1. Download the latest release for your platform from the [releases page](https://github.com/mbwilding/SteamAchievementUnlocker/releases)
+1. Download the latest release for your platform from the [releases page](https://github.com/mbwilding/steam-achievement-manager/releases)
 2. Extract the relevant archive
 
 #### Windows
 
 ```powershell
-sau
+sam
 ```
 
 #### macOS / Linux
 
 ```bash
-chmod +x sau
-./sau
+chmod +x sam
+./sam
 ```
 
 ### Build from Source
 
 ```bash
-git clone --depth=1 https://github.com/mbwilding/SteamAchievementUnlocker
-cd SteamAchievementUnlocker
+git clone --depth=1 https://github.com/mbwilding/steam-achievement-manager
+cd steam-achievement-manager
 cargo build --release
 ```
 
@@ -51,7 +51,7 @@ cargo build --release
 Launch the TUI and you'll be prompted to enter a Steam App ID:
 
 ```bash
-sau
+sam
 ```
 
 ### Direct Launch
@@ -59,7 +59,7 @@ sau
 Skip the App ID prompt by providing it directly:
 
 ```bash
-sau --id 480
+sam --id 480
 ```
 
 ### Finding Steam App IDs
