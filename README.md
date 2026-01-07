@@ -65,7 +65,6 @@ sau --id 480
 ### Finding Steam App IDs
 
 You can find a game's App ID by:
-- Visiting the game's Steam store page and checking the URL (e.g., `store.steampowered.com/app/480/` has App ID 480)
 - Right-clicking the game in your Steam library, selecting `Properties > Updates` and looking for `App ID`
 - Searching for the game on [SteamDB](https://steamdb.info/) and checking the `App ID` listed on the game's page
 
@@ -85,7 +84,7 @@ Once in the achievement manager:
 
 ## How It Works
 
-The tool uses the Steamworks API to interact with Steam's achievement system. When you process changes:
+The tool uses the [Steamworks](https://partner.steamgames.com/doc/sdk) API to interact with Steam's achievement system. When you process changes:
 
 - **Unlocking**: Selected achievements that are currently locked will be unlocked
 - **Resetting**: Deselected achievements that are currently unlocked will be reset
