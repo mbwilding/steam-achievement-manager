@@ -4,6 +4,8 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    println!("cargo:rustc-link-arg=-Wl,-rpath,$ORIGIN");
+
     let pattern = "./target/**/build/steamworks-sys-*/out/*";
     let src_path: PathBuf = glob(pattern)?
         .filter_map(Result::ok)
