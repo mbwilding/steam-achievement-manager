@@ -425,7 +425,7 @@ fn ui(f: &mut Frame, app: &mut App) {
 
     // Status message
     let status_style = if app.status_message.contains("failed") {
-        Style::default().fg(Color::Yellow)
+        Style::default().fg(Color::Red)
     } else if !app.status_message.is_empty() {
         Style::default().fg(Color::Green)
     } else {

@@ -1,67 +1,103 @@
 # Steam Achievement Unlocker
 
-## Description
+A terminal-based tool for unlocking and resetting Steam achievements for any game in your library. Built with Rust for cross-platform compatibility.
 
-Allows unlocking or resetting achievements for Steam titles by App ID.
-Works on Windows, Linux, and Mac, including apple silicon.
-Make sure Steam is running and logged in.
+![Screenshot](promo.png)
 
-> Now written in Rust, the .NET version lives in the `dotnet` branch
+## Features
 
-## Build / Run Instructions
+- Interactive TUI (Terminal User Interface) for easy achievement management
+- Unlock or reset achievements individually or in bulk
+- Cross-platform support: Windows, Linux, and macOS (including Apple Silicon)
+- Fast and lightweight
 
-```bash
-cargo run -- --help
+## Requirements
+
+- Steam must be running and logged in
+- The game must be in your Steam library
+
+## Installation
+
+### Pre-built Releases
+
+1. Download the latest release for your platform from the [releases page](https://github.com/mbwilding/SteamAchievementUnlocker/releases)
+2. Extract the relevant archive
+
+#### Windows
+
+```powershell
+sau
 ```
 
-## Release
-
-> Extract the release for your platform first
-
-Run these commands in the terminal:
-
-### Windows
-
-```ps1
-sau --help
-```
-
-### Mac / Linux
+#### macOS / Linux
 
 ```bash
 chmod +x sau
-./sau --help
+./sau
+```
+
+### Build from Source
+
+```bash
+git clone --depth=1 https://github.com/mbwilding/SteamAchievementUnlocker
+cd SteamAchievementUnlocker
+cargo build --release
 ```
 
 ## Usage
 
-Release
-> sau [OPTIONS]
+### Interactive Mode (Recommended)
 
-Source
-> cargo run -- [OPTIONS]
-
-| Option                        | Description                                                      |
-|-------------------------------|------------------------------------------------------------------|
-| `-i`, `--id <ID>`             | App ID(s) - can specify multiple (required)                      |
-| `-c`, `--clear`               | Clear achievements                                               |
-| `-p`, `--parallel <PARALLEL>` | How many apps to process at once, too high will cause issues [1] |
-| `-h`, `--help`                | Print help                                                       |
-| `-V`, `--version`             | Print version                                                    |
-
-
-You can combine arguments, for example `--id 123 --clear`
-
-### Multiple IDs
-
-You can pass multiple App IDs in two ways:
+Launch the TUI and you'll be prompted to enter a Steam App ID:
 
 ```bash
-# Comma-separated
-sau --id 123,456,789
-
-# Multiple --id flags
-sau --id 123 --id 456 --id 789
+sau
 ```
 
-To find an App ID, search for the game on [SteamDB](https://steamdb.info/) or check the game's Steam store page URL.
+### Direct Launch
+
+Skip the App ID prompt by providing it directly:
+
+```bash
+sau --id 480
+```
+
+### Finding Steam App IDs
+
+You can find a game's App ID by:
+- Visiting the game's Steam store page and checking the URL (e.g., `store.steampowered.com/app/480/` has App ID 480)
+- Right-clicking the game in your Steam library, selecting `Properties > Updates` and looking for `App ID`
+- Searching for the game on [SteamDB](https://steamdb.info/) and checking the `App ID` listed on the game's page
+
+## Controls
+
+Once in the achievement manager:
+
+| Key | Action |
+|-----|--------|
+| `↑` / `k` | Move up |
+| `↓` / `j` | Move down |
+| `Space` | Toggle achievement selection |
+| `a` | Select all achievements |
+| `d` | Deselect all achievements |
+| `Enter` | Process changes (unlock/reset selected achievements) |
+| `q` / `Esc` | Quit |
+
+## How It Works
+
+The tool uses the Steamworks API to interact with Steam's achievement system. When you process changes:
+
+- **Unlocking**: Selected achievements that are currently locked will be unlocked
+- **Resetting**: Deselected achievements that are currently unlocked will be reset
+
+## License
+
+See [LICENSE](LICENSE) file for details.
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## Disclaimer
+
+This tool modifies Steam achievement data. Use at your own risk. The authors are not responsible for any consequences that may result from using this tool, including but not limited to Steam account restrictions.
