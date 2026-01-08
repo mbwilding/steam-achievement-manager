@@ -35,6 +35,7 @@ where
     let mut app_id_input = String::new();
     let mut status: Option<Status> = None;
     let mut editing_app_id = app_opt.is_none();
+    let mut editing_search = false;
 
     loop {
         terminal.draw(|f| {
@@ -44,13 +45,62 @@ where
                 &app_id_input,
                 status.as_ref(),
                 editing_app_id,
+                editing_search,
             )
         })?;
 
         if let Event::Key(key) = event::read()?
             && key.kind == KeyEventKind::Press
         {
-            if editing_app_id {
+            if editing_search {
+                if let Some(app) = app_opt.as_mut() {
+                    match key.code {
+                        KeyCode::Char('q') | KeyCode::Esc => {
+                            editing_search = false;
+                            app.search_query.clear();
+                            status = None;
+                        }
+                        KeyCode::Char('u') if key.modifiers.contains(KeyModifiers::CONTROL) => {
+                            app.search_query.clear();
+                            status = None;
+                        }
+                        KeyCode::Char(c)
+                            if !key.modifiers.contains(KeyModifiers::CONTROL)
+                                && !key.modifiers.contains(KeyModifiers::ALT)
+                                && !key.modifiers.contains(KeyModifiers::SUPER) =>
+                        {
+                            app.search_query.push(c);
+                            if app.search_first_match() {
+                                status = None;
+                            } else {
+                                status = Some(Status::info(format!(
+                                    "No match for: {}",
+                                    app.search_query
+                                )));
+                            }
+                        }
+                        KeyCode::Backspace => {
+                            app.search_query.pop();
+                            if app.search_query.is_empty() {
+                                status = None;
+                            } else if app.search_first_match() {
+                                status = None;
+                            } else {
+                                status = Some(Status::info(format!(
+                                    "No match for: {}",
+                                    app.search_query
+                                )));
+                            }
+                        }
+
+                        KeyCode::Enter => {
+                            editing_search = false;
+                            status = None;
+                        }
+                        _ => {}
+                    }
+                }
+            } else if editing_app_id {
                 match key.code {
                     KeyCode::Char('q') | KeyCode::Esc => {
                         if app_opt.is_none() {
@@ -61,7 +111,7 @@ where
                             status = None;
                         }
                     }
-                    KeyCode::Char('c') | KeyCode::Char('d') => {
+                    KeyCode::Char('u') if key.modifiers.contains(KeyModifiers::CONTROL) => {
                         app_id_input.clear();
                         status = None;
                     }
@@ -119,6 +169,13 @@ where
                         editing_app_id = true;
                         app_id_input.clear();
                         status = None;
+                    }
+                    KeyCode::Char('/') => {
+                        editing_search = true;
+                        app.search_query.clear();
+                        status = Some(Status::info(
+                            "Search: type to jump, Enter to exit".to_string(),
+                        ));
                     }
                     KeyCode::Down | KeyCode::Char('j') => {
                         app.next();
@@ -178,13 +235,22 @@ fn draw(
     app_id_input: &str,
     status: Option<&Status>,
     editing_app_id: bool,
+    editing_search: bool,
 ) {
     let help_items = if editing_app_id {
         vec![
             ("0-9", "Type"),
             ("Backspace", "Delete"),
-            ("c/d", "Clear"),
+            ("^u", "Clear"),
             ("Enter", "Confirm"),
+            ("Esc/q", "Cancel"),
+        ]
+    } else if editing_search {
+        vec![
+            ("Any", "Type"),
+            ("Backspace", "Delete"),
+            ("^u", "Clear"),
+            ("Enter", "Done"),
             ("Esc/q", "Cancel"),
         ]
     } else {
@@ -201,6 +267,7 @@ fn draw(
             ("p/n", "Sort Column"),
             ("o", "Sort Order"),
             ("Enter", "Apply"),
+            ("/", "Search"),
             ("i", "Switch App"),
             ("Esc/q", "Quit"),
         ]
@@ -250,6 +317,8 @@ fn draw(
 
     let header = Paragraph::new(if editing_app_id || app.is_none() {
         format!("App ID: {}", app_id_input)
+    } else if editing_search {
+        format!("Search: {}", app.as_ref().unwrap().search_query)
     } else {
         format!(
             "Steam Achievement Manager - App ID: {}",
@@ -437,11 +506,15 @@ fn draw(
     }
 
     let editing_status_holder;
-    let (status_text, status_style) = if editing_app_id || app.is_none() {
+    let (status_text, status_style) = if editing_app_id || editing_search || app.is_none() {
         if let Some(status) = status {
             (status.message.as_str(), status.style())
         } else {
-            editing_status_holder = Status::info("Enter the App ID, then press Enter".to_string());
+            editing_status_holder = if editing_search {
+                Status::info("Search: type to jump, Enter to exit".to_string())
+            } else {
+                Status::info("Enter the App ID, then press Enter".to_string())
+            };
             (
                 editing_status_holder.message.as_str(),
                 editing_status_holder.style(),

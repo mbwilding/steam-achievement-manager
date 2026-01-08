@@ -3,6 +3,72 @@ use super::models::{AchievementItem, AchievementStatus, SortColumn, SortOrder, S
 use crate::steam::{AchievementData, process_achievements};
 use ratatui::widgets::TableState;
 
+fn is_word_boundary(prev: Option<char>, current: char) -> bool {
+    match prev {
+        None => true,
+        Some(p) => {
+            (p == ' ' || p == '_' || p == '-' || p == ':' || p == '/' || p == '(' || p == '[')
+                || (p.is_ascii_lowercase() && current.is_ascii_uppercase())
+        }
+    }
+}
+
+fn fuzzy_score(haystack: &str, needle: &str) -> Option<i64> {
+    let needle = needle.trim();
+    if needle.is_empty() {
+        return None;
+    }
+
+    if haystack.contains(needle) {
+        return Some(1_000_000 - (haystack.len() as i64 - needle.len() as i64));
+    }
+
+    let mut score: i64 = 0;
+    let mut last_match_index: Option<usize> = None;
+
+    let mut hay_chars = haystack.chars().enumerate();
+    let mut prev_char: Option<char> = None;
+
+    for needle_char in needle.chars() {
+        let mut found: Option<(usize, char, Option<char>)> = None;
+
+        for (i, h) in hay_chars.by_ref() {
+            if h == needle_char {
+                found = Some((i, h, prev_char));
+                prev_char = Some(h);
+                break;
+            }
+            prev_char = Some(h);
+        }
+
+        let Some((i, h, prev)) = found else {
+            return None;
+        };
+
+        score += 10;
+
+        if let Some(last) = last_match_index {
+            if i == last + 1 {
+                score += 15;
+            } else {
+                score -= (i.saturating_sub(last + 1) as i64) * 2;
+            }
+        }
+
+        if is_word_boundary(prev, h) {
+            score += 20;
+        }
+
+        last_match_index = Some(i);
+    }
+
+    if let Some(first) = last_match_index {
+        score -= first as i64;
+    }
+
+    Some(score)
+}
+
 pub struct App {
     pub achievements: Vec<AchievementItem>,
     pub current_index: usize,
@@ -11,6 +77,7 @@ pub struct App {
     pub status: Option<Status>,
     pub sort_column: SortColumn,
     pub sort_order: SortOrder,
+    pub search_query: String,
 }
 
 impl App {
@@ -45,6 +112,7 @@ impl App {
             status: None,
             sort_column: config.sort_column,
             sort_order: config.sort_order,
+            search_query: String::new(),
         };
 
         app.sort_achievements();
@@ -75,6 +143,40 @@ impl App {
             self.current_index = (self.current_index + 1) % self.achievements.len();
             self.table_state.select(Some(self.current_index));
         }
+    }
+
+    pub fn jump_to(&mut self, index: usize) {
+        if !self.achievements.is_empty() {
+            self.current_index = index.min(self.achievements.len() - 1);
+            self.table_state.select(Some(self.current_index));
+        }
+    }
+
+    pub fn search_first_match(&mut self) -> bool {
+        if self.search_query.trim().is_empty() {
+            return false;
+        }
+
+        let query = self.search_query.to_lowercase();
+
+        let mut best: Option<(usize, i64)> = None;
+        for (index, achievement) in self.achievements.iter().enumerate() {
+            let name = achievement.name.to_lowercase();
+            if let Some(score) = fuzzy_score(&name, &query) {
+                match best {
+                    None => best = Some((index, score)),
+                    Some((_, best_score)) if score > best_score => best = Some((index, score)),
+                    _ => {}
+                }
+            }
+        }
+
+        if let Some((index, _)) = best {
+            self.jump_to(index);
+            return true;
+        }
+
+        false
     }
 
     pub fn previous(&mut self) {
