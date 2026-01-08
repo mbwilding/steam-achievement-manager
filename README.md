@@ -68,23 +68,9 @@ You can find a game's App ID by:
 - Right-clicking the game in your Steam library, selecting `Properties > Updates` and looking for `App ID`
 - Searching for the game on [SteamDB](https://steamdb.info/) and checking the `App ID` listed on the game's page
 
-## Controls
-
-Once in the achievement manager:
-
-| Key | Action |
-|-----|--------|
-| `↑` / `k` | Move up |
-| `↓` / `j` | Move down |
-| `Space` | Toggle achievement selection |
-| `a` | Select all achievements |
-| `d` | Deselect all achievements |
-| `Enter` | Process changes (unlock/reset selected achievements) |
-| `q` / `Esc` | Quit |
-
 ## How It Works
 
-The tool uses the [Steamworks](https://partner.steamgames.com/doc/sdk) API to interact with Steam's achievement system. When you process changes:
+The tool uses the [Steamworks](https://partner.steamgames.com/doc/sdk) API to interact with Steam's achievement system by impersonating the desired application. When you process changes:
 
 - **Unlocking**: Selected achievements that are currently locked will be unlocked
 - **Resetting**: Deselected achievements that are currently unlocked will be reset
