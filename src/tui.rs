@@ -158,7 +158,7 @@ pub enum AchievementStatus {
 
 #[derive(Clone, PartialEq)]
 pub enum SortColumn {
-    Global,
+    Percentage,
     Name,
 }
 
@@ -166,13 +166,13 @@ impl SortColumn {
     fn from_string(s: &str) -> Self {
         match s {
             "Name" => SortColumn::Name,
-            _ => SortColumn::Global,
+            _ => SortColumn::Percentage,
         }
     }
 
     fn to_string(&self) -> String {
         match self {
-            SortColumn::Global => "Percentage".to_string(),
+            SortColumn::Percentage => "Percentage".to_string(),
             SortColumn::Name => "Name".to_string(),
         }
     }
@@ -393,7 +393,7 @@ impl App {
 
     fn sort_achievements(&mut self) {
         match self.sort_column {
-            SortColumn::Global => {
+            SortColumn::Percentage => {
                 self.achievements.sort_by(|a, b| {
                     let ordering = match a.percentage.partial_cmp(&b.percentage) {
                         Some(ord) => ord,
@@ -497,8 +497,8 @@ fn run_app<B: Backend>(
                 KeyCode::Char('d') => {
                     app.deselect_all();
                 }
-                KeyCode::Char('g') => {
-                    app.set_sort_column(SortColumn::Global);
+                KeyCode::Char('p') => {
+                    app.set_sort_column(SortColumn::Percentage);
                 }
                 KeyCode::Char('n') => {
                     app.set_sort_column(SortColumn::Name);
@@ -546,7 +546,7 @@ fn ui(f: &mut Frame, app: &mut App) {
         "↓"
     };
 
-    let percentage_header = if app.sort_column == SortColumn::Global {
+    let percentage_header = if app.sort_column == SortColumn::Percentage {
         format!("Global {}", sort_indicator)
     } else {
         "Global".to_string()
@@ -646,7 +646,7 @@ fn ui(f: &mut Frame, app: &mut App) {
         rows,
         [
             Constraint::Length(6), // Done
-            Constraint::Length(8), // Global
+            Constraint::Length(8), // Global Percentage
             Constraint::Fill(1),   // Achievement Name
         ],
     )
@@ -700,7 +700,7 @@ fn ui(f: &mut Frame, app: &mut App) {
         Span::raw(" Enable All  "),
         Span::styled("d", Style::default().fg(Color::Yellow)),
         Span::raw(" Disable All  "),
-        Span::styled("g/n", Style::default().fg(Color::Yellow)),
+        Span::styled("p/n", Style::default().fg(Color::Yellow)),
         Span::raw(" Sort Column  "),
         Span::styled("o", Style::default().fg(Color::Yellow)),
         Span::raw(" Order  "),
