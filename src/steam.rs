@@ -1,9 +1,11 @@
 use anyhow::{Context, Result, bail};
 use gag::Gag;
+use steamworks::{GameId, SteamError};
 
 pub struct AchievementInfo {
     pub name: String,
     pub unlocked: bool,
+    pub percentage: f32,
 }
 
 pub struct AchievementData {
@@ -29,6 +31,12 @@ pub fn get_achievements(id: u32) -> Result<AchievementData> {
         Err(_) => bail!("Failed to get achievement names for app {}", id),
     };
 
+    // NOTE: Required to get the global percentages
+    let game_id = GameId::from_raw(id as u64);
+    user_stats.request_global_achievement_percentages(move |result: Result<GameId, SteamError>| {
+        result.unwrap_or(game_id);
+    });
+
     let achievement_names = match user_stats.get_achievement_names() {
         Some(x) => x,
         None => bail!("Failed to get achievement names for app {}", id),
@@ -37,8 +45,19 @@ pub fn get_achievements(id: u32) -> Result<AchievementData> {
     let achievements = achievement_names
         .into_iter()
         .map(|name| {
-            let unlocked = user_stats.achievement(&name).get().unwrap_or(false);
-            AchievementInfo { name, unlocked }
+            let achievement = user_stats.achievement(&name);
+
+            let unlocked = achievement.get().unwrap_or(false);
+
+            let percentage = achievement
+                .get_achievement_achieved_percent()
+                .unwrap_or_default();
+
+            AchievementInfo {
+                name,
+                unlocked,
+                percentage,
+            }
         })
         .collect();
 

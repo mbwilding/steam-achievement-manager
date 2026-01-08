@@ -132,6 +132,7 @@ pub struct AchievementItem {
     pub name: String,
     pub selected: bool,
     pub unlocked: bool,
+    pub percentage: f32,
     pub status: AchievementStatus,
 }
 
@@ -152,6 +153,7 @@ impl App {
                 name: info.name,
                 selected: info.unlocked,
                 unlocked: info.unlocked,
+                percentage: info.percentage,
                 status: AchievementStatus::Unchanged,
             })
             .collect();
@@ -391,7 +393,10 @@ fn ui(f: &mut Frame, app: &mut App) {
         .iter()
         .map(|achievement| {
             let checkbox = if achievement.selected { "[✓]" } else { "[ ]" };
-            let content = format!("{} {}", checkbox, achievement.name);
+            let content = format!(
+                "{} {:.1} {}",
+                checkbox, achievement.percentage, achievement.name
+            );
 
             let style = match achievement.status {
                 AchievementStatus::Failed => Style::default().fg(Color::Red),
