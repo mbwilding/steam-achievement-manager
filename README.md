@@ -2,7 +2,7 @@
 
 A terminal-based tool for unlocking or resetting Steam achievements for any game in your library. Built with Rust for cross-platform compatibility.
 
-![Screenshot](promo.png)
+![Screenshot](demo.png)
 
 ## Features
 
