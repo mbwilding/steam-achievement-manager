@@ -1,5 +1,5 @@
 use super::config::AppConfig;
-use super::models::{AchievementItem, AchievementStatus, SortColumn, SortOrder};
+use super::models::{AchievementItem, AchievementStatus, SortColumn, SortOrder, Status};
 use crate::steam::{AchievementData, process_achievements};
 use ratatui::widgets::TableState;
 
@@ -8,7 +8,7 @@ pub struct App {
     pub current_index: usize,
     pub app_id: u32,
     pub table_state: TableState,
-    pub status_message: String,
+    pub status: Option<Status>,
     pub sort_column: SortColumn,
     pub sort_order: SortOrder,
 }
@@ -44,7 +44,7 @@ impl App {
             current_index: 0,
             app_id,
             table_state,
-            status_message: String::new(),
+            status: None,
             sort_column,
             sort_order,
         };
@@ -166,7 +166,7 @@ impl App {
                     }
                 }
                 Err(e) => {
-                    self.status_message = format!("Error: {}", e);
+                    self.status = Some(Status::error(e.to_string()));
                     for name in to_set {
                         if let Some(achievement) =
                             self.achievements.iter_mut().find(|a| a.name == name)
@@ -198,7 +198,7 @@ impl App {
                     }
                 }
                 Err(e) => {
-                    self.status_message = format!("Error: {}", e);
+                    self.status = Some(Status::error(e.to_string()));
                     for name in to_clear {
                         if let Some(achievement) =
                             self.achievements.iter_mut().find(|a| a.name == name)
@@ -212,13 +212,15 @@ impl App {
         }
 
         if fail_count == 0 && success_count > 0 {
-            self.status_message =
-                format!("✓ Successfully processed {} achievement(s)", success_count);
+            self.status = Some(Status::success(format!(
+                "✓ Successfully processed {} achievement(s)",
+                success_count
+            )));
         } else if fail_count > 0 {
-            self.status_message = format!(
+            self.status = Some(Status::error(format!(
                 "⚠ Processed: {} success, {} failed",
                 success_count, fail_count
-            );
+            )));
         }
     }
 

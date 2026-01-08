@@ -2,12 +2,14 @@ use anyhow::{Context, Result, bail};
 use gag::Gag;
 use steamworks::{GameId, SteamError};
 
+#[derive(Clone)]
 pub struct AchievementInfo {
     pub name: String,
     pub unlocked: bool,
     pub percentage: f32,
 }
 
+#[derive(Clone)]
 pub struct AchievementData {
     pub achievements: Vec<AchievementInfo>,
 }

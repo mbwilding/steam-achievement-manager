@@ -1,3 +1,4 @@
+use ratatui::style::{Color, Style};
 use std::fmt;
 
 #[derive(Clone, PartialEq)]
@@ -5,6 +6,45 @@ pub enum AchievementStatus {
     Unchanged,
     Success,
     Failed,
+}
+
+#[derive(Clone)]
+pub enum StatusLevel {
+    Info,
+    Success,
+    Error,
+}
+
+#[derive(Clone)]
+pub struct Status {
+    pub message: String,
+    pub level: StatusLevel,
+}
+
+impl Status {
+    pub fn new(message: String, level: StatusLevel) -> Self {
+        Self { message, level }
+    }
+
+    pub fn error(message: String) -> Self {
+        Self::new(message, StatusLevel::Error)
+    }
+
+    pub fn success(message: String) -> Self {
+        Self::new(message, StatusLevel::Success)
+    }
+
+    pub fn info(message: String) -> Self {
+        Self::new(message, StatusLevel::Info)
+    }
+
+    pub fn style(&self) -> Style {
+        match self.level {
+            StatusLevel::Info => Style::default().fg(Color::Yellow),
+            StatusLevel::Success => Style::default().fg(Color::Green),
+            StatusLevel::Error => Style::default().fg(Color::Red),
+        }
+    }
 }
 
 #[derive(Clone, PartialEq)]
