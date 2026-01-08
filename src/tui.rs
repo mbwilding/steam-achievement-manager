@@ -13,6 +13,7 @@ use ratatui::{
     text::{Line, Span},
     widgets::{Block, Borders, Cell, Paragraph, Row, Table, TableState, Wrap},
 };
+use serde::{Deserialize, Serialize};
 use std::io;
 
 const COLOR_LEGENDARY: Color = Color::Rgb(255, 128, 0);
@@ -28,6 +29,21 @@ const COLOR_UNCOMMON: Color = Color::Rgb(30, 255, 0);
 const BOUND_UNCOMMON: f32 = 50.0;
 
 const COLOR_COMMON: Color = Color::Rgb(255, 255, 255);
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct AppConfig {
+    pub sort_column: String,
+    pub sort_order: String,
+}
+
+impl Default for AppConfig {
+    fn default() -> Self {
+        Self {
+            sort_column: "Percentage".to_string(),
+            sort_order: "Descending".to_string(),
+        }
+    }
+}
 
 pub fn prompt_for_app_id() -> Result<Option<u32>> {
     // Setup terminal
@@ -140,6 +156,50 @@ pub enum AchievementStatus {
     Failed,
 }
 
+#[derive(Clone, PartialEq)]
+pub enum SortColumn {
+    Global,
+    Name,
+}
+
+impl SortColumn {
+    fn from_string(s: &str) -> Self {
+        match s {
+            "Name" => SortColumn::Name,
+            _ => SortColumn::Global,
+        }
+    }
+
+    fn to_string(&self) -> String {
+        match self {
+            SortColumn::Global => "Percentage".to_string(),
+            SortColumn::Name => "Name".to_string(),
+        }
+    }
+}
+
+#[derive(Clone, PartialEq)]
+pub enum SortOrder {
+    Ascending,
+    Descending,
+}
+
+impl SortOrder {
+    fn from_string(s: &str) -> Self {
+        match s {
+            "Ascending" => SortOrder::Ascending,
+            _ => SortOrder::Descending,
+        }
+    }
+
+    fn to_string(&self) -> String {
+        match self {
+            SortOrder::Ascending => "Ascending".to_string(),
+            SortOrder::Descending => "Descending".to_string(),
+        }
+    }
+}
+
 #[derive(Clone)]
 pub struct AchievementItem {
     pub name: String,
@@ -155,10 +215,17 @@ pub struct App {
     pub app_id: u32,
     pub table_state: TableState,
     pub status_message: String,
+    pub sort_column: SortColumn,
+    pub sort_order: SortOrder,
 }
 
 impl App {
     pub fn new(achievements: AchievementData, app_id: u32) -> Self {
+        // Load config
+        let config: AppConfig = confy::load("sam", None).unwrap_or_default();
+        let sort_column = SortColumn::from_string(&config.sort_column);
+        let sort_order = SortOrder::from_string(&config.sort_order);
+
         let mut achievements: Vec<AchievementItem> = achievements
             .achievements
             .into_iter()
@@ -171,23 +238,27 @@ impl App {
             })
             .collect();
 
-        achievements.sort_by(|a, b| {
-            match b.percentage.partial_cmp(&a.percentage) {
-                Some(ordering) => ordering,
-                None => std::cmp::Ordering::Equal,
-            }
+        achievements.sort_by(|a, b| match b.percentage.partial_cmp(&a.percentage) {
+            Some(ordering) => ordering,
+            None => std::cmp::Ordering::Equal,
         });
 
         let mut table_state = TableState::default();
         table_state.select(Some(0));
 
-        Self {
+        let mut app = Self {
             achievements,
             current_index: 0,
             app_id,
             table_state,
             status_message: String::new(),
-        }
+            sort_column,
+            sort_order,
+        };
+
+        // Apply the loaded sort
+        app.sort_achievements();
+        app
     }
 
     fn toggle_selection(&mut self) {
@@ -319,6 +390,58 @@ impl App {
             );
         }
     }
+
+    fn sort_achievements(&mut self) {
+        match self.sort_column {
+            SortColumn::Global => {
+                self.achievements.sort_by(|a, b| {
+                    let ordering = match a.percentage.partial_cmp(&b.percentage) {
+                        Some(ord) => ord,
+                        None => std::cmp::Ordering::Equal,
+                    };
+                    if self.sort_order == SortOrder::Ascending {
+                        ordering
+                    } else {
+                        ordering.reverse()
+                    }
+                });
+            }
+            SortColumn::Name => {
+                self.achievements.sort_by(|a, b| {
+                    let ordering = a.name.cmp(&b.name);
+                    if self.sort_order == SortOrder::Ascending {
+                        ordering
+                    } else {
+                        ordering.reverse()
+                    }
+                });
+            }
+        }
+    }
+
+    fn set_sort_column(&mut self, column: SortColumn) {
+        self.sort_column = column;
+        self.sort_achievements();
+        self.save_config();
+    }
+
+    fn toggle_sort_order(&mut self) {
+        self.sort_order = if self.sort_order == SortOrder::Ascending {
+            SortOrder::Descending
+        } else {
+            SortOrder::Ascending
+        };
+        self.sort_achievements();
+        self.save_config();
+    }
+
+    fn save_config(&self) {
+        let config = AppConfig {
+            sort_column: self.sort_column.to_string(),
+            sort_order: self.sort_order.to_string(),
+        };
+        let _ = confy::store("sam", None, config);
+    }
 }
 
 pub fn run_tui(achievements: AchievementData, app_id: u32) -> Result<Option<Vec<(String, bool)>>> {
@@ -374,6 +497,15 @@ fn run_app<B: Backend>(
                 KeyCode::Char('d') => {
                     app.deselect_all();
                 }
+                KeyCode::Char('g') => {
+                    app.set_sort_column(SortColumn::Global);
+                }
+                KeyCode::Char('n') => {
+                    app.set_sort_column(SortColumn::Name);
+                }
+                KeyCode::Char('o') => {
+                    app.toggle_sort_order();
+                }
                 KeyCode::Enter => {
                     app.process_changes();
                 }
@@ -408,18 +540,36 @@ fn ui(f: &mut Frame, app: &mut App) {
     f.render_widget(header, chunks[0]);
 
     // Achievement table
+    let sort_indicator = if app.sort_order == SortOrder::Ascending {
+        "↑"
+    } else {
+        "↓"
+    };
+
+    let percentage_header = if app.sort_column == SortColumn::Global {
+        format!("Global {}", sort_indicator)
+    } else {
+        "Global".to_string()
+    };
+
+    let name_header = if app.sort_column == SortColumn::Name {
+        format!("Achievement Name {}", sort_indicator)
+    } else {
+        "Achievement Name".to_string()
+    };
+
     let header = Row::new(vec![
         Cell::from("Done").style(
             Style::default()
                 .fg(Color::Cyan)
                 .add_modifier(Modifier::BOLD),
         ),
-        Cell::from("Global").style(
+        Cell::from(percentage_header).style(
             Style::default()
                 .fg(Color::Cyan)
                 .add_modifier(Modifier::BOLD),
         ),
-        Cell::from("Achievement Name").style(
+        Cell::from(name_header).style(
             Style::default()
                 .fg(Color::Cyan)
                 .add_modifier(Modifier::BOLD),
@@ -495,8 +645,8 @@ fn ui(f: &mut Frame, app: &mut App) {
     let table = Table::new(
         rows,
         [
-            Constraint::Length(4), // Done
-            Constraint::Length(6), // Global
+            Constraint::Length(6), // Done
+            Constraint::Length(8), // Global
             Constraint::Fill(1),   // Achievement Name
         ],
     )
@@ -547,9 +697,13 @@ fn ui(f: &mut Frame, app: &mut App) {
         Span::styled("Space", Style::default().fg(Color::Yellow)),
         Span::raw(" Toggle  "),
         Span::styled("a", Style::default().fg(Color::Yellow)),
-        Span::raw(" Select All  "),
+        Span::raw(" Enable All  "),
         Span::styled("d", Style::default().fg(Color::Yellow)),
-        Span::raw(" Deselect All  "),
+        Span::raw(" Disable All  "),
+        Span::styled("g/n", Style::default().fg(Color::Yellow)),
+        Span::raw(" Sort Column  "),
+        Span::styled("o", Style::default().fg(Color::Yellow)),
+        Span::raw(" Order  "),
         Span::styled("Enter", Style::default().fg(Color::Yellow)),
         Span::raw(" Process  "),
         Span::styled("q/Esc", Style::default().fg(Color::Yellow)),

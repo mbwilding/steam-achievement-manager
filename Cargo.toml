@@ -12,10 +12,12 @@ build = "build.rs"
 [dependencies]
 anyhow = "1.0"
 clap = { version = "4.5", features = ["derive"] }
+confy = "2.0"
 crossterm = "0.29"
 gag = "1.0.0"
 openssl = { version = "0.10", features = ["vendored"] }
 ratatui = "0.30"
+serde = { version = "1.0", features = ["derive"] }
 steamworks = "0.12"
 
 [build-dependencies]
