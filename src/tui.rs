@@ -1,7 +1,9 @@
 use crate::steam::{AchievementData, get_achievements, process_achievements};
 use anyhow::Result;
 use crossterm::{
-    event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, KeyEventKind},
+    event::{
+        self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, KeyEventKind, KeyModifiers,
+    },
     execute,
     terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
 };
@@ -14,20 +16,17 @@ use ratatui::{
     widgets::{Block, Borders, Cell, Paragraph, Row, Table, TableState, Wrap},
 };
 use serde::{Deserialize, Serialize};
+use std::fmt;
 use std::io;
 
 const COLOR_LEGENDARY: Color = Color::Rgb(255, 128, 0);
 const BOUND_LEGENDARY: f32 = 1.0;
-
 const COLOR_EPIC: Color = Color::Rgb(163, 53, 238);
 const BOUND_EPIC: f32 = 10.0;
-
 const COLOR_RARE: Color = Color::Rgb(0, 112, 221);
 const BOUND_RARE: f32 = 25.0;
-
 const COLOR_UNCOMMON: Color = Color::Rgb(30, 255, 0);
 const BOUND_UNCOMMON: f32 = 50.0;
-
 const COLOR_COMMON: Color = Color::Rgb(255, 255, 255);
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -169,11 +168,13 @@ impl SortColumn {
             _ => SortColumn::Percentage,
         }
     }
+}
 
-    fn to_string(&self) -> String {
+impl fmt::Display for SortColumn {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            SortColumn::Percentage => "Percentage".to_string(),
-            SortColumn::Name => "Name".to_string(),
+            SortColumn::Percentage => write!(f, "Percentage"),
+            SortColumn::Name => write!(f, "Name"),
         }
     }
 }
@@ -191,11 +192,13 @@ impl SortOrder {
             _ => SortOrder::Descending,
         }
     }
+}
 
-    fn to_string(&self) -> String {
+impl fmt::Display for SortOrder {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            SortOrder::Ascending => "Ascending".to_string(),
-            SortOrder::Descending => "Descending".to_string(),
+            SortOrder::Ascending => write!(f, "Ascending"),
+            SortOrder::Descending => write!(f, "Descending"),
         }
     }
 }
@@ -293,6 +296,47 @@ impl App {
                 self.current_index -= 1;
             } else {
                 self.current_index = self.achievements.len() - 1;
+            }
+            self.table_state.select(Some(self.current_index));
+        }
+    }
+
+    fn jump_to_top(&mut self) {
+        if !self.achievements.is_empty() {
+            self.current_index = 0;
+            self.table_state.select(Some(self.current_index));
+        }
+    }
+
+    fn jump_to_bottom(&mut self) {
+        if !self.achievements.is_empty() {
+            self.current_index = self.achievements.len() - 1;
+            self.table_state.select(Some(self.current_index));
+        }
+    }
+
+    fn page_up(&mut self) {
+        if !self.achievements.is_empty() {
+            // Move up by approximately one page (10 items)
+            let page_size = 10;
+            if self.current_index >= page_size {
+                self.current_index -= page_size;
+            } else {
+                self.current_index = 0;
+            }
+            self.table_state.select(Some(self.current_index));
+        }
+    }
+
+    fn page_down(&mut self) {
+        if !self.achievements.is_empty() {
+            // Move down by approximately one page (10 items)
+            let page_size = 10;
+            let max_index = self.achievements.len() - 1;
+            if self.current_index + page_size <= max_index {
+                self.current_index += page_size;
+            } else {
+                self.current_index = max_index;
             }
             self.table_state.select(Some(self.current_index));
         }
@@ -488,6 +532,24 @@ fn run_app<B: Backend>(
                 KeyCode::Up | KeyCode::Char('k') => {
                     app.previous();
                 }
+                KeyCode::Char('g') => {
+                    app.jump_to_top();
+                }
+                KeyCode::Char('G') => {
+                    app.jump_to_bottom();
+                }
+                KeyCode::PageUp => {
+                    app.page_up();
+                }
+                KeyCode::PageDown => {
+                    app.page_down();
+                }
+                KeyCode::Char('p') if key.modifiers.contains(KeyModifiers::CONTROL) => {
+                    app.page_up();
+                }
+                KeyCode::Char('n') if key.modifiers.contains(KeyModifiers::CONTROL) => {
+                    app.page_down();
+                }
                 KeyCode::Char(' ') => {
                     app.toggle_selection();
                 }
@@ -516,13 +578,60 @@ fn run_app<B: Backend>(
 }
 
 fn ui(f: &mut Frame, app: &mut App) {
+    let help_items = vec![
+        ("↑/k", "Up"),
+        ("↓/j", "Down"),
+        ("g", "Top"),
+        ("G", "Bottom"),
+        ("PgUp/PgDn/^P/^N", "Page"),
+        ("Space", "Toggle"),
+        ("a", "Enable All"),
+        ("d", "Disable All"),
+        ("p/n", "Sort Column"),
+        ("o", "Order"),
+        ("Enter", "Process"),
+        ("q/Esc", "Quit"),
+    ];
+
+    const BORDER_WIDTH: usize = 2;
+    const WRAP_TOLERANCE: usize = 4;
+    const KEY_DESC_SEPARATOR: usize = 1;
+    const ITEM_SPACING: usize = 2;
+
+    let available_width = f.area().width.saturating_sub(BORDER_WIDTH as u16) as usize;
+    let mut help_line_count = 0;
+    let mut current_line_width = 0;
+    let mut line_has_content = false;
+
+    for (i, (key, desc)) in help_items.iter().enumerate() {
+        let is_last = i == help_items.len() - 1;
+        let item_base_width = key.len() + KEY_DESC_SEPARATOR + desc.len();
+        let spacing_width = if is_last { 0 } else { ITEM_SPACING };
+
+        if line_has_content
+            && current_line_width + item_base_width > available_width.saturating_add(WRAP_TOLERANCE)
+        {
+            help_line_count += 1;
+            current_line_width = 0;
+        }
+
+        current_line_width += item_base_width + spacing_width;
+        line_has_content = true;
+    }
+
+    if line_has_content {
+        help_line_count += 1;
+    }
+
+    let help_height = help_line_count.max(1) as u16 + BORDER_WIDTH as u16;
+
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
             Constraint::Length(3),
             Constraint::Min(0),
             Constraint::Length(3),
-            Constraint::Length(3),
+            Constraint::Length(help_height),
         ])
         .split(f.area());
 
@@ -688,29 +797,39 @@ fn ui(f: &mut Frame, app: &mut App) {
         .block(Block::default().borders(Borders::ALL).title(" Status "));
     f.render_widget(status, chunks[2]);
 
-    // Help text
-    let help_text = vec![Line::from(vec![
-        Span::styled("↑/k", Style::default().fg(Color::Yellow)),
-        Span::raw(" Up  "),
-        Span::styled("↓/j", Style::default().fg(Color::Yellow)),
-        Span::raw(" Down  "),
-        Span::styled("Space", Style::default().fg(Color::Yellow)),
-        Span::raw(" Toggle  "),
-        Span::styled("a", Style::default().fg(Color::Yellow)),
-        Span::raw(" Enable All  "),
-        Span::styled("d", Style::default().fg(Color::Yellow)),
-        Span::raw(" Disable All  "),
-        Span::styled("p/n", Style::default().fg(Color::Yellow)),
-        Span::raw(" Sort Column  "),
-        Span::styled("o", Style::default().fg(Color::Yellow)),
-        Span::raw(" Order  "),
-        Span::styled("Enter", Style::default().fg(Color::Yellow)),
-        Span::raw(" Process  "),
-        Span::styled("q/Esc", Style::default().fg(Color::Yellow)),
-        Span::raw(" Quit"),
-    ])];
+    let mut help_lines: Vec<Line> = vec![];
+    let mut current_line_spans: Vec<Span> = vec![];
+    let mut current_line_width = 0;
+    let available_width = f.area().width.saturating_sub(BORDER_WIDTH as u16) as usize;
+    let line_width_threshold = available_width.saturating_add(WRAP_TOLERANCE);
 
-    let help = Paragraph::new(help_text).block(
+    for (i, (key, desc)) in help_items.iter().enumerate() {
+        let is_last = i == help_items.len() - 1;
+        let item_base_width = key.len() + KEY_DESC_SEPARATOR + desc.len();
+        let spacing_width = if is_last { 0 } else { ITEM_SPACING };
+
+        if !current_line_spans.is_empty()
+            && current_line_width + item_base_width > line_width_threshold
+        {
+            help_lines.push(Line::from(current_line_spans.clone()));
+            current_line_spans.clear();
+            current_line_width = 0;
+        }
+
+        current_line_spans.push(Span::styled(*key, Style::default().fg(Color::Yellow)));
+        current_line_spans.push(Span::raw(if is_last {
+            format!(" {}", desc)
+        } else {
+            format!(" {}  ", desc)
+        }));
+        current_line_width += item_base_width + spacing_width;
+    }
+
+    if !current_line_spans.is_empty() {
+        help_lines.push(Line::from(current_line_spans));
+    }
+
+    let help = Paragraph::new(help_lines).block(
         Block::default()
             .borders(Borders::ALL)
             .title(" Controls ")
