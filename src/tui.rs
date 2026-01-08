@@ -1,3 +1,4 @@
+use crate::steam::{AchievementData, get_achievements, process_achievements};
 use anyhow::Result;
 use crossterm::{
     event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, KeyEventKind},
@@ -14,7 +15,19 @@ use ratatui::{
 };
 use std::io;
 
-use crate::steam::{AchievementData, get_achievements, process_achievements};
+const COLOR_LEGENDARY: Color = Color::Rgb(255, 128, 0);
+const BOUND_LEGENDARY: f32 = 1.0;
+
+const COLOR_EPIC: Color = Color::Rgb(163, 53, 238);
+const BOUND_EPIC: f32 = 10.0;
+
+const COLOR_RARE: Color = Color::Rgb(0, 112, 221);
+const BOUND_RARE: f32 = 25.0;
+
+const COLOR_UNCOMMON: Color = Color::Rgb(30, 255, 0);
+const BOUND_UNCOMMON: f32 = 50.0;
+
+const COLOR_COMMON: Color = Color::Rgb(255, 255, 255);
 
 pub fn prompt_for_app_id() -> Result<Option<u32>> {
     // Setup terminal
@@ -413,25 +426,18 @@ fn ui(f: &mut Frame, app: &mut App) {
         .map(|achievement| {
             let checkbox = if achievement.selected { "[✓]" } else { "[ ]" };
 
-            let percentage_style = if achievement.percentage <= 1.0 {
-                // Legendary (Orange)
+            let percentage_style = if achievement.percentage <= BOUND_LEGENDARY {
                 Style::default()
-                    .fg(Color::Rgb(255, 128, 0))
+                    .fg(COLOR_LEGENDARY)
                     .add_modifier(Modifier::BOLD)
-            } else if achievement.percentage <= 10.0 {
-                // Epic (Purple)
-                Style::default()
-                    .fg(Color::Rgb(163, 53, 238))
-                    .add_modifier(Modifier::BOLD)
-            } else if achievement.percentage <= 25.0 {
-                // Rare (Blue)
-                Style::default().fg(Color::Rgb(0, 112, 221))
-            } else if achievement.percentage <= 50.0 {
-                // Uncommon (Green)
-                Style::default().fg(Color::Rgb(30, 255, 0))
+            } else if achievement.percentage <= BOUND_EPIC {
+                Style::default().fg(COLOR_EPIC).add_modifier(Modifier::BOLD)
+            } else if achievement.percentage <= BOUND_RARE {
+                Style::default().fg(COLOR_RARE)
+            } else if achievement.percentage <= BOUND_UNCOMMON {
+                Style::default().fg(COLOR_UNCOMMON)
             } else {
-                // Common (White)
-                Style::default().fg(Color::Rgb(255, 255, 255))
+                Style::default().fg(COLOR_COMMON)
             };
 
             let checkbox_style = match achievement.status {
@@ -460,6 +466,25 @@ fn ui(f: &mut Frame, app: &mut App) {
         })
         .collect();
 
+    let achievements_done = app.achievements.iter().filter(|x| x.unlocked).count();
+    let achievements_total = app.achievements.len();
+    let achievements_percentage = (achievements_done as f64 / achievements_total as f64) * 100.0;
+    let achievements_style = if achievements_percentage == 100.0 {
+        Style::default().fg(Color::Red).add_modifier(Modifier::BOLD)
+    } else if achievements_percentage > 90.0 {
+        Style::default()
+            .fg(COLOR_LEGENDARY)
+            .add_modifier(Modifier::BOLD)
+    } else if achievements_percentage > 75.0 {
+        Style::default().fg(COLOR_EPIC).add_modifier(Modifier::BOLD)
+    } else if achievements_percentage > 50.0 {
+        Style::default().fg(COLOR_RARE)
+    } else if achievements_percentage > 25.0 {
+        Style::default().fg(COLOR_UNCOMMON)
+    } else {
+        Style::default().fg(COLOR_COMMON)
+    };
+
     let table = Table::new(
         rows,
         [
@@ -473,21 +498,16 @@ fn ui(f: &mut Frame, app: &mut App) {
         Block::default()
             .borders(Borders::ALL)
             .title(Line::from(vec![
-                "[".into(),
                 Span::styled(
-                    "Achievements",
+                    " Achievements ",
                     Style::default()
                         .fg(Color::Magenta)
                         .add_modifier(Modifier::BOLD),
                 ),
-                ": ".into(),
                 Span::styled(
-                    format!("{}", app.achievements.len()),
-                    Style::default()
-                        .fg(Color::Green)
-                        .add_modifier(Modifier::BOLD),
+                    format!("{}/{} ", achievements_done, achievements_total),
+                    achievements_style,
                 ),
-                "]".into(),
             ])),
     )
     .row_highlight_style(
