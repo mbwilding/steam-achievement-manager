@@ -10,7 +10,7 @@ use ratatui::{
     layout::{Alignment, Constraint, Direction, Layout},
     style::{Color, Modifier, Style},
     text::{Line, Span},
-    widgets::{Block, Borders, List, ListItem, ListState, Paragraph, Wrap},
+    widgets::{Block, Borders, Cell, Paragraph, Row, Table, TableState, Wrap},
 };
 use std::io;
 
@@ -140,7 +140,7 @@ pub struct App {
     pub achievements: Vec<AchievementItem>,
     pub current_index: usize,
     pub app_id: u32,
-    pub list_state: ListState,
+    pub table_state: TableState,
     pub status_message: String,
 }
 
@@ -158,14 +158,14 @@ impl App {
             })
             .collect();
 
-        let mut list_state = ListState::default();
-        list_state.select(Some(0));
+        let mut table_state = TableState::default();
+        table_state.select(Some(0));
 
         Self {
             achievements,
             current_index: 0,
             app_id,
-            list_state,
+            table_state,
             status_message: String::new(),
         }
     }
@@ -192,7 +192,7 @@ impl App {
     fn next(&mut self) {
         if !self.achievements.is_empty() {
             self.current_index = (self.current_index + 1) % self.achievements.len();
-            self.list_state.select(Some(self.current_index));
+            self.table_state.select(Some(self.current_index));
         }
     }
 
@@ -203,7 +203,7 @@ impl App {
             } else {
                 self.current_index = self.achievements.len() - 1;
             }
-            self.list_state.select(Some(self.current_index));
+            self.table_state.select(Some(self.current_index));
         }
     }
 
@@ -387,18 +387,54 @@ fn ui(f: &mut Frame, app: &mut App) {
     .block(Block::default().borders(Borders::ALL));
     f.render_widget(header, chunks[0]);
 
-    // Achievement list
-    let items: Vec<ListItem> = app
+    // Achievement table
+    let header = Row::new(vec![
+        Cell::from("Done").style(
+            Style::default()
+                .fg(Color::Cyan)
+                .add_modifier(Modifier::BOLD),
+        ),
+        Cell::from("Global").style(
+            Style::default()
+                .fg(Color::Cyan)
+                .add_modifier(Modifier::BOLD),
+        ),
+        Cell::from("Achievement Name").style(
+            Style::default()
+                .fg(Color::Cyan)
+                .add_modifier(Modifier::BOLD),
+        ),
+    ])
+    .height(1);
+
+    let rows: Vec<Row> = app
         .achievements
         .iter()
         .map(|achievement| {
             let checkbox = if achievement.selected { "[✓]" } else { "[ ]" };
-            let content = format!(
-                "{} {:.1} {}",
-                checkbox, achievement.percentage, achievement.name
-            );
 
-            let style = match achievement.status {
+            let percentage_style = if achievement.percentage <= 1.0 {
+                // Legendary (Orange)
+                Style::default()
+                    .fg(Color::Rgb(255, 128, 0))
+                    .add_modifier(Modifier::BOLD)
+            } else if achievement.percentage <= 10.0 {
+                // Epic (Purple)
+                Style::default()
+                    .fg(Color::Rgb(163, 53, 238))
+                    .add_modifier(Modifier::BOLD)
+            } else if achievement.percentage <= 25.0 {
+                // Rare (Blue)
+                Style::default().fg(Color::Rgb(0, 112, 221))
+            } else if achievement.percentage <= 50.0 {
+                // Uncommon (Green)
+                Style::default().fg(Color::Rgb(30, 255, 0))
+            } else {
+                // Common (White)
+                Style::default().fg(Color::Rgb(255, 255, 255))
+            };
+
+            let checkbox_style = match achievement.status {
                 AchievementStatus::Failed => Style::default().fg(Color::Red),
                 AchievementStatus::Success => Style::default().fg(Color::Green),
                 AchievementStatus::Unchanged => {
@@ -410,23 +446,56 @@ fn ui(f: &mut Frame, app: &mut App) {
                 }
             };
 
-            ListItem::new(content).style(style)
+            let name_style = match achievement.status {
+                AchievementStatus::Failed => Style::default().fg(Color::Red),
+                AchievementStatus::Success => Style::default().fg(Color::Green),
+                AchievementStatus::Unchanged => Style::default(),
+            };
+
+            Row::new(vec![
+                Cell::from(checkbox).style(checkbox_style),
+                Cell::from(format!("{:.1}%", achievement.percentage)).style(percentage_style),
+                Cell::from(achievement.name.clone()).style(name_style),
+            ])
         })
         .collect();
 
-    let list = List::new(items)
-        .block(
-            Block::default()
-                .borders(Borders::ALL)
-                .title(format!(" Achievements ({}) ", app.achievements.len())),
-        )
-        .highlight_style(
-            Style::default()
-                .fg(Color::Black)
-                .bg(Color::White)
-                .add_modifier(Modifier::BOLD),
-        );
-    f.render_stateful_widget(list, chunks[1], &mut app.list_state);
+    let table = Table::new(
+        rows,
+        [
+            Constraint::Length(4), // Done
+            Constraint::Length(6), // Global
+            Constraint::Fill(1),   // Achievement Name
+        ],
+    )
+    .header(header)
+    .block(
+        Block::default()
+            .borders(Borders::ALL)
+            .title(Line::from(vec![
+                "[".into(),
+                Span::styled(
+                    "Achievements",
+                    Style::default()
+                        .fg(Color::Magenta)
+                        .add_modifier(Modifier::BOLD),
+                ),
+                ": ".into(),
+                Span::styled(
+                    format!("{}", app.achievements.len()),
+                    Style::default()
+                        .fg(Color::Green)
+                        .add_modifier(Modifier::BOLD),
+                ),
+                "]".into(),
+            ])),
+    )
+    .row_highlight_style(
+        Style::default()
+            .bg(Color::Rgb(0x18, 0x18, 0x18))
+            .add_modifier(Modifier::BOLD),
+    );
+    f.render_stateful_widget(table, chunks[1], &mut app.table_state);
 
     // Status message
     let status_style = if app.status_message.contains("failed") {
