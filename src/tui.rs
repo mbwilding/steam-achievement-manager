@@ -159,7 +159,7 @@ pub struct App {
 
 impl App {
     pub fn new(achievements: AchievementData, app_id: u32) -> Self {
-        let achievements = achievements
+        let mut achievements: Vec<AchievementItem> = achievements
             .achievements
             .into_iter()
             .map(|info| AchievementItem {
@@ -170,6 +170,13 @@ impl App {
                 status: AchievementStatus::Unchanged,
             })
             .collect();
+
+        achievements.sort_by(|a, b| {
+            match b.percentage.partial_cmp(&a.percentage) {
+                Some(ordering) => ordering,
+                None => std::cmp::Ordering::Equal,
+            }
+        });
 
         let mut table_state = TableState::default();
         table_state.select(Some(0));
