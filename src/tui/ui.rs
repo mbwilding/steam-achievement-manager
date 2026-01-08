@@ -22,10 +22,7 @@ const COLOR_UNCOMMON: Color = Color::Rgb(30, 255, 0);
 const BOUND_UNCOMMON: f32 = 50.0;
 const COLOR_COMMON: Color = Color::Rgb(255, 255, 255);
 
-pub fn run_achievement_manager<B: Backend>(
-    terminal: &mut Terminal<B>,
-    initial_app_id: Option<u32>,
-) -> Result<()>
+pub fn run<B: Backend>(terminal: &mut Terminal<B>, initial_app_id: Option<u32>) -> Result<()>
 where
     <B as Backend>::Error: Send + Sync + 'static,
 {
@@ -41,7 +38,7 @@ where
 
     loop {
         terminal.draw(|f| {
-            ui(
+            draw(
                 f,
                 app_opt.as_mut(),
                 &app_id_input,
@@ -175,17 +172,7 @@ where
     }
 }
 
-fn ui(
-    f: &mut Frame,
-    app: Option<&mut App>,
-    app_id_input: &str,
-    status: Option<&Status>,
-    editing_app_id: bool,
-) {
-    render(f, app, app_id_input, status, editing_app_id);
-}
-
-fn render(
+fn draw(
     f: &mut Frame,
     mut app: Option<&mut App>,
     app_id_input: &str,
@@ -195,26 +182,27 @@ fn render(
     let help_items = if editing_app_id {
         vec![
             ("0-9", "Type"),
-            ("c/d", "Clear"),
             ("Backspace", "Delete"),
-            ("Enter", "Load"),
-            ("q/Esc", "Cancel"),
+            ("c/d", "Clear"),
+            ("Enter", "Confirm"),
+            ("Esc/q", "Cancel"),
         ]
     } else {
         vec![
-            ("↑/k", "Up"),
-            ("↓/j", "Down"),
+            ("j/↓", "Down"),
+            ("k/↑", "Up"),
+            ("^n/PgDn", "Page Down"),
+            ("^p/PgUp", "Page Up"),
             ("g", "Top"),
             ("G", "Bottom"),
-            ("PgUp/PgDn/^P/^N", "Page"),
             ("Space", "Toggle"),
-            ("a", "Enable All"),
-            ("d", "Disable All"),
+            ("a", "Select All"),
+            ("d", "Deselect All"),
             ("p/n", "Sort Column"),
-            ("o", "Order"),
-            ("Enter", "Process"),
+            ("o", "Sort Order"),
+            ("Enter", "Apply"),
             ("i", "Switch App"),
-            ("q/Esc", "Quit"),
+            ("Esc/q", "Quit"),
         ]
     };
 
@@ -453,9 +441,7 @@ fn render(
         if let Some(status) = status {
             (status.message.as_str(), status.style())
         } else {
-            editing_status_holder = Status::info(
-                "Editing App ID - Type the app ID and press Enter to load".to_string(),
-            );
+            editing_status_holder = Status::info("Enter the App ID, then press Enter".to_string());
             (
                 editing_status_holder.message.as_str(),
                 editing_status_holder.style(),
