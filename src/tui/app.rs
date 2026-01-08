@@ -16,8 +16,6 @@ pub struct App {
 impl App {
     pub fn new(achievements: AchievementData, app_id: u32) -> Self {
         let config: AppConfig = confy::load("sam", None).unwrap_or_default();
-        let sort_column = SortColumn::from_string(&config.sort_column);
-        let sort_order = SortOrder::from_string(&config.sort_order);
 
         let mut achievements: Vec<AchievementItem> = achievements
             .achievements
@@ -45,8 +43,8 @@ impl App {
             app_id,
             table_state,
             status: None,
-            sort_column,
-            sort_order,
+            sort_column: config.sort_column,
+            sort_order: config.sort_order,
         };
 
         app.sort_achievements();
@@ -270,8 +268,8 @@ impl App {
 
     fn save_config(&self) {
         let config = AppConfig {
-            sort_column: self.sort_column.to_string(),
-            sort_order: self.sort_order.to_string(),
+            sort_column: self.sort_column.clone(),
+            sort_order: self.sort_order.clone(),
         };
         let _ = confy::store("sam", None, config);
     }

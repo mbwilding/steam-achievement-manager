@@ -1,21 +1,22 @@
 use ratatui::style::{Color, Style};
+use serde::{Deserialize, Serialize};
 use std::fmt;
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Debug)]
 pub enum AchievementStatus {
     Unchanged,
     Success,
     Failed,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum StatusLevel {
     Info,
     Success,
     Error,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Status {
     pub message: String,
     pub level: StatusLevel,
@@ -47,19 +48,10 @@ impl Status {
     }
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Debug, Serialize, Deserialize)]
 pub enum SortColumn {
     Percentage,
     Name,
-}
-
-impl SortColumn {
-    pub fn from_string(s: &str) -> Self {
-        match s {
-            "Name" => SortColumn::Name,
-            _ => SortColumn::Percentage,
-        }
-    }
 }
 
 impl fmt::Display for SortColumn {
@@ -71,19 +63,10 @@ impl fmt::Display for SortColumn {
     }
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Debug, Serialize, Deserialize)]
 pub enum SortOrder {
     Ascending,
     Descending,
-}
-
-impl SortOrder {
-    pub fn from_string(s: &str) -> Self {
-        match s {
-            "Ascending" => SortOrder::Ascending,
-            _ => SortOrder::Descending,
-        }
-    }
 }
 
 impl fmt::Display for SortOrder {
@@ -95,7 +78,7 @@ impl fmt::Display for SortOrder {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct AchievementItem {
     pub name: String,
     pub selected: bool,
