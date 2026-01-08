@@ -12,6 +12,13 @@ use ratatui::{
     widgets::{Block, Borders, Cell, Paragraph, Row, Table},
 };
 
+const STATUS_SEARCH_HINT: &str = "Search: Typing...";
+const STATUS_APP_ID_HINT: &str = "App ID: Typing...";
+
+fn status_no_match(query: &str) -> Status {
+    Status::info(format!("No match for: {}", query))
+}
+
 const COLOR_LEGENDARY: Color = Color::Rgb(255, 128, 0);
 const BOUND_LEGENDARY: f32 = 1.0;
 const COLOR_EPIC: Color = Color::Rgb(163, 53, 238);
@@ -73,24 +80,16 @@ where
                             if app.search_first_match() {
                                 status = None;
                             } else {
-                                status = Some(Status::info(format!(
-                                    "No match for: {}",
-                                    app.search_query
-                                )));
+                                status = Some(status_no_match(&app.search_query));
                             }
                         }
                         KeyCode::Backspace => {
                             app.search_query.pop();
-                            if app.search_query.is_empty() {
-                                status = None;
-                            } else if app.search_first_match() {
-                                status = None;
+                            status = if app.search_query.is_empty() || app.search_first_match() {
+                                None
                             } else {
-                                status = Some(Status::info(format!(
-                                    "No match for: {}",
-                                    app.search_query
-                                )));
-                            }
+                                Some(status_no_match(&app.search_query))
+                            };
                         }
 
                         KeyCode::Enter => {
@@ -173,9 +172,7 @@ where
                     KeyCode::Char('/') => {
                         editing_search = true;
                         app.search_query.clear();
-                        status = Some(Status::info(
-                            "Search: type to jump, Enter to exit".to_string(),
-                        ));
+                        status = Some(Status::info(STATUS_SEARCH_HINT.to_string()));
                     }
                     KeyCode::Down | KeyCode::Char('j') => {
                         app.next();
@@ -511,9 +508,9 @@ fn draw(
             (status.message.as_str(), status.style())
         } else {
             editing_status_holder = if editing_search {
-                Status::info("Search: type to jump, Enter to exit".to_string())
+                Status::info(STATUS_SEARCH_HINT.to_string())
             } else {
-                Status::info("Enter the App ID, then press Enter".to_string())
+                Status::info(STATUS_APP_ID_HINT.to_string())
             };
             (
                 editing_status_holder.message.as_str(),

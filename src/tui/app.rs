@@ -41,9 +41,7 @@ fn fuzzy_score(haystack: &str, needle: &str) -> Option<i64> {
             prev_char = Some(h);
         }
 
-        let Some((i, h, prev)) = found else {
-            return None;
-        };
+        let (i, h, prev) = found?;
 
         score += 10;
 
