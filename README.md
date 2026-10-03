@@ -36,6 +36,31 @@ chmod +x sam
 ./sam
 ```
 
+### With Nix
+
+Run without installing:
+
+```bash
+nix run github:mbwilding/steam-achievement-manager
+```
+
+To install it from a flake-based NixOS or Home Manager setup, add the input and have it follow your `nixpkgs`:
+
+```nix
+inputs = {
+  steam-achievement-manager = {
+    url = "github:mbwilding/steam-achievement-manager";
+    inputs.nixpkgs.follows = "nixpkgs";
+  };
+};
+```
+
+Then add `inputs.steam-achievement-manager.packages.${pkgs.stdenv.hostPlatform.system}.default` to `home.packages` or `environment.systemPackages`. An overlay is also exported as `inputs.steam-achievement-manager.overlays.default`, which adds `pkgs.steam-achievement-manager`.
+
+The flake reads the version from `Cargo.toml` and dependencies from `Cargo.lock`.
+
+For development, `nix develop` (or `direnv allow`) provides the Rust toolchain.
+
 ### Build from Source
 
 ```bash
