@@ -11,9 +11,14 @@ use ratatui::{
     text::{Line, Span},
     widgets::{Block, Borders, Cell, Paragraph, Row, Table},
 };
+use std::time::Duration;
 
 const STATUS_SEARCH_HINT: &str = "Search: Typing...";
 const STATUS_APP_ID_HINT: &str = "App ID: Typing...";
+
+fn status_loading() -> Status {
+    Status::info("Loading achievements...".to_string())
+}
 
 fn status_no_match(query: &str) -> Status {
     Status::info(format!("No match for: {}", query))
@@ -33,15 +38,11 @@ pub fn run<B: Backend>(terminal: &mut Terminal<B>, initial_app_id: Option<u32>) 
 where
     <B as Backend>::Error: Send + Sync + 'static,
 {
-    let mut app_opt = initial_app_id.and_then(|id| {
-        steam::get_achievements(id)
-            .ok()
-            .map(|achievements| App::new(achievements, id))
-    });
-
+    let mut app_opt: Option<App> = None;
+    let mut pending_load = initial_app_id;
+    let mut status = pending_load.map(|_| status_loading());
     let mut app_id_input = String::new();
-    let mut status: Option<Status> = None;
-    let mut editing_app_id = app_opt.is_none();
+    let mut editing_app_id = true;
     let mut editing_search = false;
 
     loop {
@@ -56,13 +57,29 @@ where
             )
         })?;
 
+        if let Some(id) = pending_load.take() {
+            match steam::get_achievements(id) {
+                Ok(achievements) => {
+                    app_opt = Some(App::new(achievements, id));
+                    editing_app_id = false;
+                    status = None;
+                }
+                Err(e) => status = Some(Status::error(e.to_string())),
+            }
+            app_id_input.clear();
+            while event::poll(Duration::ZERO)? {
+                event::read()?;
+            }
+            continue;
+        }
+
         if let Event::Key(key) = event::read()?
             && key.kind == KeyEventKind::Press
         {
             if editing_search {
                 if let Some(app) = app_opt.as_mut() {
                     match key.code {
-                        KeyCode::Char('q') | KeyCode::Esc => {
+                        KeyCode::Esc => {
                             editing_search = false;
                             app.search_query.clear();
                             status = None;
@@ -135,18 +152,10 @@ where
                             }
                         } else {
                             match app_id_input.parse::<u32>() {
-                                Ok(id) => match steam::get_achievements(id) {
-                                    Ok(achievements) => {
-                                        app_opt = Some(App::new(achievements, id));
-                                        editing_app_id = false;
-                                        app_id_input.clear();
-                                        status = None;
-                                    }
-                                    Err(e) => {
-                                        status = Some(Status::error(e.to_string()));
-                                        app_id_input.clear();
-                                    }
-                                },
+                                Ok(id) => {
+                                    pending_load = Some(id);
+                                    status = Some(status_loading());
+                                }
                                 Err(_) => {
                                     status = Some(Status::error(format!(
                                         "Invalid App ID: {}",
@@ -248,7 +257,7 @@ fn draw(
             ("Backspace", "Delete"),
             ("^u", "Clear"),
             ("Enter", "Done"),
-            ("Esc/q", "Cancel"),
+            ("Esc", "Cancel"),
         ]
     } else {
         vec![
@@ -270,37 +279,8 @@ fn draw(
         ]
     };
 
-    const BORDER_WIDTH: usize = 2;
-    const WRAP_TOLERANCE: usize = 4;
-    const KEY_DESC_SEPARATOR: usize = 1;
-    const ITEM_SPACING: usize = 2;
-
-    let available_width = f.area().width.saturating_sub(BORDER_WIDTH as u16) as usize;
-    let mut help_line_count = 0;
-    let mut current_line_width = 0;
-    let mut line_has_content = false;
-
-    for (i, (key, desc)) in help_items.iter().enumerate() {
-        let is_last = i == help_items.len() - 1;
-        let item_base_width = key.len() + KEY_DESC_SEPARATOR + desc.len();
-        let spacing_width = if is_last { 0 } else { ITEM_SPACING };
-
-        if line_has_content
-            && current_line_width + item_base_width > available_width.saturating_add(WRAP_TOLERANCE)
-        {
-            help_line_count += 1;
-            current_line_width = 0;
-        }
-
-        current_line_width += item_base_width + spacing_width;
-        line_has_content = true;
-    }
-
-    if line_has_content {
-        help_line_count += 1;
-    }
-
-    let help_height = help_line_count.max(1) as u16 + BORDER_WIDTH as u16;
+    let help_lines = help_lines(&help_items, f.area().width.saturating_sub(2) as usize);
+    let help_height = help_lines.len().max(1) as u16 + 2;
 
     let chunks = Layout::default()
         .direction(Direction::Vertical)
@@ -312,15 +292,14 @@ fn draw(
         ])
         .split(f.area());
 
-    let header = Paragraph::new(if editing_app_id || app.is_none() {
-        format!("App ID: {}", app_id_input)
-    } else if editing_search {
-        format!("Search: {}", app.as_ref().unwrap().search_query)
-    } else {
-        format!(
-            "Steam Achievement Manager - App ID: {}",
-            app.as_ref().unwrap().app_id
-        )
+    let header = Paragraph::new(match app.as_deref() {
+        Some(app) if !editing_app_id && editing_search => {
+            format!("Search: {}", app.search_query)
+        }
+        Some(app) if !editing_app_id => {
+            format!("Steam Achievement Manager - App ID: {}", app.app_id)
+        }
+        _ => format!("App ID: {}", app_id_input),
     })
     .style(
         Style::default()
@@ -532,38 +511,6 @@ fn draw(
         .block(Block::default().borders(Borders::ALL).title(" Status "));
     f.render_widget(status_para, chunks[2]);
 
-    let mut help_lines: Vec<Line> = vec![];
-    let mut current_line_spans: Vec<Span> = vec![];
-    let mut current_line_width = 0;
-    let available_width = f.area().width.saturating_sub(BORDER_WIDTH as u16) as usize;
-    let line_width_threshold = available_width.saturating_add(WRAP_TOLERANCE);
-
-    for (i, (key, desc)) in help_items.iter().enumerate() {
-        let is_last = i == help_items.len() - 1;
-        let item_base_width = key.len() + KEY_DESC_SEPARATOR + desc.len();
-        let spacing_width = if is_last { 0 } else { ITEM_SPACING };
-
-        if !current_line_spans.is_empty()
-            && current_line_width + item_base_width > line_width_threshold
-        {
-            help_lines.push(Line::from(current_line_spans.clone()));
-            current_line_spans.clear();
-            current_line_width = 0;
-        }
-
-        current_line_spans.push(Span::styled(*key, Style::default().fg(Color::Yellow)));
-        current_line_spans.push(Span::raw(if is_last {
-            format!(" {}", desc)
-        } else {
-            format!(" {}  ", desc)
-        }));
-        current_line_width += item_base_width + spacing_width;
-    }
-
-    if !current_line_spans.is_empty() {
-        help_lines.push(Line::from(current_line_spans));
-    }
-
     let help = Paragraph::new(help_lines).block(
         Block::default()
             .borders(Borders::ALL)
@@ -571,4 +518,32 @@ fn draw(
             .style(Style::default().fg(Color::Gray)),
     );
     f.render_widget(help, chunks[3]);
+}
+
+fn help_lines(items: &[(&'static str, &'static str)], width: usize) -> Vec<Line<'static>> {
+    const ITEM_SPACING: usize = 2;
+
+    let mut lines = vec![];
+    let mut spans: Vec<Span> = vec![];
+    let mut line_width = 0;
+
+    for (key, desc) in items {
+        let item_width = key.chars().count() + 1 + desc.chars().count();
+        if !spans.is_empty() && line_width + ITEM_SPACING + item_width > width {
+            lines.push(Line::from(std::mem::take(&mut spans)));
+            line_width = 0;
+        }
+        if !spans.is_empty() {
+            spans.push(Span::raw("  "));
+            line_width += ITEM_SPACING;
+        }
+        spans.push(Span::styled(*key, Style::default().fg(Color::Yellow)));
+        spans.push(Span::raw(format!(" {desc}")));
+        line_width += item_width;
+    }
+
+    if !spans.is_empty() {
+        lines.push(Line::from(spans));
+    }
+    lines
 }

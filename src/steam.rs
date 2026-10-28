@@ -1,6 +1,8 @@
 use anyhow::{Context, Result, bail};
 use gag::Gag;
-use steamworks::{GameId, SteamError};
+use std::sync::mpsc;
+use std::thread;
+use std::time::{Duration, Instant};
 
 #[derive(Clone)]
 pub struct AchievementInfo {
@@ -11,6 +13,7 @@ pub struct AchievementInfo {
 
 #[derive(Clone)]
 pub struct AchievementData {
+    pub percentages_loaded: bool,
     pub achievements: Vec<AchievementInfo>,
 }
 
@@ -33,11 +36,20 @@ pub fn get_achievements(id: u32) -> Result<AchievementData> {
         Err(_) => bail!("Failed to get achievement names for app {}", id),
     };
 
-    // NOTE: Required to get the global percentages
-    let game_id = GameId::from_raw(id as u64);
-    user_stats.request_global_achievement_percentages(move |result: Result<GameId, SteamError>| {
-        result.unwrap_or(game_id);
+    let (tx, rx) = mpsc::channel();
+    user_stats.request_global_achievement_percentages(move |result| {
+        let _ = tx.send(result.is_ok());
     });
+    let mut percentages_loaded = false;
+    let deadline = Instant::now() + Duration::from_secs(5);
+    while Instant::now() < deadline {
+        client.run_callbacks();
+        if let Ok(ok) = rx.try_recv() {
+            percentages_loaded = ok;
+            break;
+        }
+        thread::sleep(Duration::from_millis(50));
+    }
 
     let achievement_names = match user_stats.get_achievement_names() {
         Some(x) => x,
@@ -63,7 +75,10 @@ pub fn get_achievements(id: u32) -> Result<AchievementData> {
         })
         .collect();
 
-    Ok(AchievementData { achievements })
+    Ok(AchievementData {
+        achievements,
+        percentages_loaded,
+    })
 }
 
 pub fn process_achievements(

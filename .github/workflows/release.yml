@@ -34,7 +34,7 @@ jobs:
     runs-on: ${{ matrix.platform.runs-on }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Build Binary
         uses: houseabsolute/actions-rust-cross@v1
@@ -48,12 +48,11 @@ jobs:
         shell: pwsh
         run: |
           Set-Location "target/${{ matrix.platform.target }}/release"
-          $files = Get-ChildItem "*steam_api*", "SAM*"
-          $files = $files | Where-Object { $_.Name -notlike "*.d" -and $_.Name -notlike "*.pdb" }
+          $files = Get-ChildItem "*steam_api*", "sam*" -Exclude "*.d", "*.pdb"
           Compress-Archive -Path $files -DestinationPath "../../../sam-${{ matrix.platform.name }}.zip"
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: sam-${{ matrix.platform.name }}
           path: sam-${{ matrix.platform.name }}.zip
@@ -65,7 +64,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Get Cargo.toml Version
         id: get_version
@@ -74,13 +73,13 @@ jobs:
           echo "VERSION=$version" >> $GITHUB_ENV
 
       - name: Download Artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: "v${{ env.VERSION }}"
-          release_name: "${{ env.VERSION }}"
+          name: "${{ env.VERSION }}"
           files: |
             LICENSE
             README.md

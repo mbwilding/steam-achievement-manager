@@ -1,33 +1,41 @@
 use glob::glob;
 use std::env;
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    if cfg!(target_os = "linux") {
-        println!("cargo:rustc-link-arg=-Wl,-rpath,$ORIGIN");
-    } else if cfg!(target_os = "macos") {
-        println!("cargo:rustc-link-arg=-Wl,-rpath,@loader_path");
-    }
+    let target_os = env::var("CARGO_CFG_TARGET_OS")?;
+    let target_arch = env::var("CARGO_CFG_TARGET_ARCH")?;
 
-    let pattern = "./target/**/build/steamworks-sys-*/out/*";
-    let src_path: PathBuf = glob(pattern)?
-        .filter_map(Result::ok)
-        .next()
-        .ok_or("steam_api files not found")?;
+    let lib_name = match target_os.as_str() {
+        "linux" => {
+            println!("cargo:rustc-link-arg=-Wl,-rpath,$ORIGIN");
+            "libsteam_api.so"
+        }
+        "macos" => {
+            println!("cargo:rustc-link-arg=-Wl,-rpath,@loader_path");
+            "libsteam_api.dylib"
+        }
+        "windows" if target_arch == "x86" => "steam_api.dll",
+        "windows" => "steam_api64.dll",
+        os => return Err(format!("Unsupported target OS: {os}").into()),
+    };
 
-    let out_dir = env::var("OUT_DIR")?;
-    let out_path = Path::new(&out_dir);
-    let target_dir = out_path
-        .parent()
-        .and_then(|p| p.parent())
-        .and_then(|p| p.parent())
+    let out_dir = PathBuf::from(env::var("OUT_DIR")?);
+    let profile_dir = out_dir
+        .ancestors()
+        .nth(3)
         .ok_or("Failed to locate target directory")?;
 
-    let file_name = src_path.file_name().ok_or("No file name")?;
-    let dest_path = target_dir.join(file_name);
+    let pattern = profile_dir
+        .join("build/steamworks-sys-*/out")
+        .join(lib_name);
+    let src = glob(pattern.to_str().ok_or("Non UTF-8 target path")?)?
+        .filter_map(Result::ok)
+        .max_by_key(|p| fs::metadata(p).and_then(|m| m.modified()).ok())
+        .ok_or_else(|| format!("{lib_name} not found"))?;
 
-    fs::copy(&src_path, &dest_path)?;
+    fs::copy(&src, profile_dir.join(lib_name))?;
 
     Ok(())
 }

@@ -18,6 +18,8 @@ pub struct App {
 impl App {
     pub fn new(achievements: AchievementData, app_id: u32) -> Self {
         let config: AppConfig = confy::load("sam", None).unwrap_or_default();
+        let status = (!achievements.percentages_loaded)
+            .then(|| Status::info("Global percentages unavailable".to_string()));
 
         let mut achievements: Vec<AchievementItem> = achievements
             .achievements
@@ -44,7 +46,7 @@ impl App {
             current_index: 0,
             app_id,
             table_state,
-            status: None,
+            status,
             sort_column: config.sort_column,
             sort_order: config.sort_order,
             search_query: String::new(),

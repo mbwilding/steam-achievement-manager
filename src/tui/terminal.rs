@@ -1,16 +1,32 @@
 use anyhow::Result;
 use crossterm::{
+    cursor::Show,
     event::{DisableMouseCapture, EnableMouseCapture},
     execute,
     terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
 };
 use ratatui::{Terminal, backend::CrosstermBackend};
-use std::io;
+use std::{
+    io, panic,
+    sync::atomic::{AtomicBool, Ordering},
+};
 
 type RawTerminal = Terminal<CrosstermBackend<io::Stdout>>;
 
+static ACTIVE: AtomicBool = AtomicBool::new(false);
+
 pub struct TerminalGuard {
     terminal: RawTerminal,
+}
+
+fn restore() {
+    let _ = disable_raw_mode();
+    let _ = execute!(
+        io::stdout(),
+        LeaveAlternateScreen,
+        DisableMouseCapture,
+        Show
+    );
 }
 
 impl TerminalGuard {
@@ -20,6 +36,16 @@ impl TerminalGuard {
         execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
         let backend = CrosstermBackend::new(stdout);
         let terminal = Terminal::new(backend)?;
+
+        ACTIVE.store(true, Ordering::SeqCst);
+        let hook = panic::take_hook();
+        panic::set_hook(Box::new(move |info| {
+            if ACTIVE.swap(false, Ordering::SeqCst) {
+                restore();
+            }
+            hook(info);
+        }));
+
         Ok(Self { terminal })
     }
 
@@ -30,13 +56,9 @@ impl TerminalGuard {
 
 impl Drop for TerminalGuard {
     fn drop(&mut self) {
-        let _ = disable_raw_mode();
-        let _ = execute!(
-            self.terminal.backend_mut(),
-            LeaveAlternateScreen,
-            DisableMouseCapture
-        );
-        let _ = self.terminal.show_cursor();
+        if ACTIVE.swap(false, Ordering::SeqCst) {
+            restore();
+        }
     }
 }
 
