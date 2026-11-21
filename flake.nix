@@ -21,7 +21,6 @@
           src = self;
           cargoLock.lockFile = ./Cargo.lock;
           doCheck = false;
-          nativeBuildInputs = [ pkgs.perl ];
           postInstall = ''
             lib=$(find target -name 'libsteam_api.*' -path '*/build/steamworks-sys-*/out/*' | head -n1)
             install -Dm755 "$lib" "$out/bin/$(basename "$lib")"
@@ -48,7 +47,6 @@
             clippy
             rustfmt
             rust-analyzer
-            perl
           ];
         };
       });
